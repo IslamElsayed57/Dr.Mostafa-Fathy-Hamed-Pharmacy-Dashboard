@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>صيدلية د.مصطفى فتحي حامد - لوحة التحكم</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/config.js"></script>
+    <script src="js/supabase.js"></script>
+</head>
+<body style="font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #FFFFFF;">
+    <div style="text-align: center; color: #5A3825;">
+        <h2 style="margin-bottom: 0.5rem;">صيدلية د.مصطفى فتحي حامد</h2>
+        <p style="color: #6B584A;">جاري توجيهك إلى لوحة التحكم...</p>
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            try {
+                const { data: { session } } = await db.getClient().auth.getSession();
+                if (session) {
+                    window.location.href = "dashboard.html";
+                } else {
+                    window.location.href = "login.html";
+                }
+            } catch (e) {
+                window.location.href = "login.html";
+            }
+        });
+    </script>
+</body>
+</html>

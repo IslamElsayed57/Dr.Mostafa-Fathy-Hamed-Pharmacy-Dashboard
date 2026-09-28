@@ -1,0 +1,142 @@
+/* ==========================================================================
+   صيدلية د.مصطفى فتحي حامد (Dr.Mostafa Fathy Hamed Pharmacy) - Responsive Stylesheet
+   Mobile First & Adaptive Layouts (Mobile, Tablet, Desktop)
+   ========================================================================== */
+
+/* Hamburger Button (Hidden on Desktop) */
+.btn-hamburger {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    color: var(--text-main);
+    cursor: pointer;
+    padding: 0.4rem;
+}
+
+.sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(2px);
+    z-index: 995;
+    display: none;
+}
+
+/* Tablet Breakpoint (max-width: 1024px) */
+@media (max-width: 1024px) {
+    :root {
+        --sidebar-width: 240px;
+    }
+
+    .page-content {
+        padding: 1.25rem;
+    }
+
+    .app-topbar {
+        padding: 0 1.25rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Mobile Breakpoint (max-width: 768px) */
+@media (max-width: 768px) {
+    .btn-hamburger {
+        display: block;
+    }
+
+    /* RTL (Arabic): sidebar is pinned to right:0, hide it off-screen to the right */
+    html[dir="rtl"] .app-sidebar {
+        transform: translateX(100%);
+        box-shadow: var(--shadow-lg);
+        pointer-events: none;
+    }
+
+    /* LTR (English): sidebar is pinned to left:0, hide it off-screen to the left */
+    html[dir="ltr"] .app-sidebar {
+        transform: translateX(-100%);
+        box-shadow: var(--shadow-lg);
+        pointer-events: none;
+    }
+
+    /* Open state — must use !important on pointer-events to beat the higher-
+       specificity html[dir] selectors above that set pointer-events: none.   */
+    html[dir="rtl"] .app-sidebar.mobile-open,
+    html[dir="ltr"] .app-sidebar.mobile-open {
+        transform: translateX(0) !important;
+        pointer-events: auto !important;
+    }
+
+    .sidebar-overlay.active {
+        display: block;
+    }
+
+    .app-main {
+        margin-inline-start: 0 !important;
+        margin-inline-end: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+
+    .topbar-title {
+        font-size: 1.1rem;
+    }
+
+    .branch-indicator-badge span {
+        display: none;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 0.85rem;
+    }
+
+    .stat-card {
+        padding: 1rem;
+    }
+
+    .filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .search-input-wrap {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .card-header .btn {
+        width: 100%;
+    }
+
+    .toast-container {
+        left: 1rem !important;
+        right: 1rem !important;
+        max-width: none;
+    }
+
+    /* Modal adjustments */
+    .modal-card {
+        max-width: 95vw;
+    }
+}
+
+/* Small Phone Breakpoint (max-width: 480px) */
+@media (max-width: 480px) {
+    .topbar-title {
+        font-size: 0.95rem;
+    }
+
+    .user-info {
+        display: none;
+    }
+}

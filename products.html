@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>صيدلية د.مصطفى فتحي حامد - دليل الأدوية والمنتجات</title>
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- SheetJS (xlsx) CDN for Excel import/export -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+
+    <div class="app-wrapper">
+        <!-- Sidebar Navigation -->
+        <aside class="app-sidebar" id="appSidebar">
+            <div class="sidebar-header">
+                <a href="dashboard.html" class="brand-logo">
+                    <div class="brand-logo-icon">
+                        <i class="fa-solid fa-staff-snake"></i>
+                    </div>
+                    <span data-i18n="brandName">صيدلية د.مصطفى فتحي حامد</span>
+                </a>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span data-i18n="navDashboard">الرئيسية والإحصائيات</span>
+                </a>
+                <a href="orders.html" class="nav-item">
+                    <i class="fa-solid fa-boxes-packing"></i>
+                    <span data-i18n="navOrders">إدارة الطلبات</span>
+                    <span class="nav-badge" id="sidebarOrdersBadge">0</span>
+                </a>
+                <a href="customers.html" class="nav-item">
+                    <i class="fa-solid fa-users"></i>
+                    <span data-i18n="navCustomers">دليل العملاء</span>
+                </a>
+                <a href="consultations.html" class="nav-item">
+                    <i class="fa-solid fa-headset"></i>
+                    <span data-i18n="navConsultations">الاستشارات الصيدلانية</span>
+                    <span class="nav-badge" id="sidebarConsultationsBadge">0</span>
+                </a>
+                <a href="consultations-directory.html" class="nav-item">
+                    <i class="fa-solid fa-clipboard-user"></i>
+                    <span data-i18n="navConsultationsDirectory">دليل الاستشارات</span>
+                </a>
+
+                <div class="nav-section-title" data-i18n="navProducts">الأدوية والكتالوج</div>
+                <a href="products.html" class="nav-item active">
+                    <i class="fa-solid fa-pills"></i>
+                    <span data-i18n="navProducts">دليل الأدوية والمنتجات</span>
+                </a>
+                <a href="categories.html" class="nav-item">
+                    <i class="fa-solid fa-tags"></i>
+                    <span data-i18n="navCategories">الأقسام والتصنيفات</span>
+                </a>
+                <a href="branches.html" class="nav-item">
+                    <i class="fa-solid fa-hospital"></i>
+                    <span data-i18n="navBranches">الفروع ومنافذ البيع</span>
+                </a>
+
+                <div class="nav-section-title admin-only-nav" style="display:none" data-i18n="navStaff">الإدارة والتقارير</div>
+                <a href="staff.html" class="nav-item admin-only-nav" style="display:none">
+                    <i class="fa-solid fa-user-doctor"></i>
+                    <span data-i18n="navStaff">طاقم الصيادلة والمستخدمين</span>
+                </a>
+                <a href="reports.html" class="nav-item admin-only-nav" style="display:none">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span data-i18n="navReports">التقارير والمبيعات</span>
+                </a>
+
+                <div class="nav-section-title" data-i18n="navSettings">النظام</div>
+                <a href="settings.html" class="nav-item admin-only-nav" style="display:none">
+                    <i class="fa-solid fa-gear"></i>
+                    <span data-i18n="navSettings">إعدادات النظام</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-mini-card">
+                    <div class="user-avatar" id="sidebarUserAvatar">A</div>
+                    <div class="user-info">
+                        <div class="user-name" id="sidebarUserName">...</div>
+                        <div class="user-role-badge" id="sidebarUserRole">...</div>
+                    </div>
+                    <button class="btn-logout" onclick="auth.signOut()" title="تسجيل الخروج">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <div class="app-main">
+            <!-- Topbar -->
+            <header class="app-topbar">
+                <div class="topbar-left">
+                    <button class="btn-hamburger" id="btnHamburger">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <h1 class="topbar-title" data-i18n="navProducts">دليل الأدوية والمنتجات</h1>
+                </div>
+
+                <div class="topbar-right">
+                    <div class="branch-indicator-badge" id="topbarBranchIndicator">
+                        <i class="fa-solid fa-hospital"></i> <span>جميع الفروع</span>
+                    </div>
+
+                    <button class="btn-icon" id="themeToggleBtn" onclick="toggleDashboardTheme()" title="الوضع الليلي">
+                        <i class="fa-solid fa-moon"></i>
+                    </button>
+
+                    <button class="btn-icon" onclick="notifications.clearUnread()" title="الإشعارات">
+                        <i class="fa-solid fa-bell"></i>
+                        <span class="notification-badge-dot" id="topbarNotificationDot"></span>
+                    </button>
+
+                    <button id="langSwitcherBtn" class="lang-switcher-btn" onclick="i18n.toggleLanguage()">
+                        <i class="fa-solid fa-globe"></i> <span>English</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <main class="page-content">
+                <div class="content-card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fa-solid fa-capsules" style="color: var(--primary);"></i>
+                            <span data-i18n="navProducts">كتالوج الأدوية والمنتجات</span>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <span class="badge badge-active" id="productsCountBadge">0 منتج</span>
+                            <button class="btn btn-primary btn-sm admin-only" style="display:none" onclick="openAddProductModal()" id="btnAddProductBtn">
+                                <i class="fa-solid fa-plus"></i> <span data-i18n="addProduct">إضافة منتج جديد</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+                        <!-- Filters & Search Bar -->
+                        <div class="filter-bar">
+                            <div class="search-input-wrap">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input type="text" id="productSearchInput" class="form-control" data-i18n-placeholder="searchPlaceholderProducts" placeholder="بحث باسم الدواء أو المنتج...">
+                            </div>
+
+                            <select id="productCategoryFilter" class="form-control" style="max-width: 200px;">
+                                <option value="all" data-i18n="allCategories">جميع الأقسام</option>
+                            </select>
+
+                            <input type="file" id="productExcelFile" accept=".xlsx,.xls" style="display: none;" onchange="handleProductExcelImport(this.files[0])">
+
+                            <button class="btn btn-outline btn-sm admin-only" style="display:none" onclick="document.getElementById('productExcelFile').click()" title="تحميل/رفع المنتجات من ملف إكسل">
+                                <i class="fa-solid fa-file-import"></i> <span data-i18n="importExcelTitle">رفع من Excel</span>
+                            </button>
+                            <button class="btn btn-outline btn-sm admin-only" style="display:none" onclick="downloadProductTemplate()" title="تحميل نموذج إكسل جاهز">
+                                <i class="fa-solid fa-file-excel"></i> <span data-i18n="downloadExcelTemplate">تحميل نموذج Excel</span>
+                            </button>
+                        </div>
+
+                        <!-- Bulk actions bar (filled by products.js when rows are selected) -->
+                        <div id="bulkActionsBar" style="display: none;"></div>
+
+                        <!-- Table -->
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th class="admin-only" style="display:none; width: 44px;">
+                                            <input type="checkbox" id="selectAllProducts" onchange="toggleSelectAllProducts(this.checked)" title="تحديد الكل" style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary);">
+                                        </th>
+                                        <th data-i18n="productImage">الصورة</th>
+                                        <th data-i18n="productNameAr">اسم المنتج</th>
+                                        <th data-i18n="productCategory">القسم</th>
+                                        <th data-i18n="productPrice">السعر</th>
+                                        <th data-i18n="productActiveStatus">الحالة</th>
+                                        <th data-i18n="orderActions">إجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="productsTableBody">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="empty-state" id="emptyProductsState" style="display: none;">
+                            <i class="fa-solid fa-box-open"></i>
+                            <p data-i18n="noDataFound">لا توجد منتجات مسجلة</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Add/Edit Product Modal -->
+    <div class="modal-backdrop" id="productModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h4 class="card-title" id="productModalTitle" data-i18n="addProduct">إضافة منتج جديد</h4>
+                <button class="btn btn-icon btn-sm" onclick="closeProductModal()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="productForm" onsubmit="handleProductFormSubmit(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="productIdInput">
+                    
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="productNameAr">اسم المنتج (بالعربية) *</label>
+                        <input type="text" id="productNameArInput" class="form-control" required placeholder="مثال: بنادول إكسترا 24 قرص">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="productNameEn">اسم المنتج (بالإنجليزية)</label>
+                        <input type="text" id="productNameEnInput" class="form-control" placeholder="Example: Panadol Extra 24 Tablets">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label" data-i18n="productPrice">السعر (ج.م) *</label>
+                            <input type="number" step="0.5" id="productPriceInput" class="form-control" required placeholder="45.00">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" data-i18n="productOldPrice">السعر قبل الخصم</label>
+                            <input type="number" step="0.5" id="productOldPriceInput" class="form-control" placeholder="50.00">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="productCategory">القسم / التصنيف</label>
+                        <select id="productCategorySelect" class="form-control" onchange="onProductCategoryChange()">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">الفئة الفرعية (اختياري)</label>
+                        <select id="productSubcategorySelect" class="form-control">
+                            <option value="">-- بدون فئة فرعية --</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="productBadge">الشارة (اختياري)</label>
+                        <input type="text" id="productBadgeInput" class="form-control" placeholder="مثال: الأكثر طلباً، خصم 15%">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="productImage">صورة المنتج</label>
+                        <input type="file" id="productImageFile" class="form-control" accept="image/*">
+                    </div>
+
+                    <div class="form-group" style="flex-direction: row; align-items: center; gap: 0.5rem;">
+                        <input type="checkbox" id="productInStockInput" checked style="width: 18px; height: 18px;">
+                        <label for="productInStockInput" class="form-label" style="margin: 0; cursor: pointer;" data-i18n="productInStock">متوفر بالمخزون</label>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeProductModal()" data-i18n="cancel">إلغاء</button>
+                    <button type="submit" id="saveProductBtn" class="btn btn-primary" data-i18n="save">حفظ المنتج</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Excel Import Results Modal -->
+    <div class="modal-backdrop" id="productImportModal">
+        <div class="modal-card" style="max-width: 620px;">
+            <div class="modal-header">
+                <h4 class="card-title" data-i18n="importExcelTitle">نتيجة رفع المنتجات من Excel</h4>
+                <button class="btn btn-icon btn-sm" onclick="document.getElementById('productImportModal').classList.remove('active')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div id="productImportSummary" style="margin-bottom: 1rem; font-weight: 600;"></div>
+                <div class="table-responsive" id="productImportTableWrap" style="max-height: 320px; overflow-y: auto; display: none;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th data-i18n="productNameAr">اسم المنتج</th>
+                                <th>السبب</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productImportTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="document.getElementById('productImportModal').classList.remove('active')" data-i18n="close">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/i18n.js"></script>
+    <script src="js/supabase.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/products.js"></script>
+</body>
+</html>

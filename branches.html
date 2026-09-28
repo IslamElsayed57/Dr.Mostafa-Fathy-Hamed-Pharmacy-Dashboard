@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>صيدلية د.مصطفى فتحي حامد - الفروع ومنافذ البيع</title>
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <div class="app-wrapper">
+        <!-- Sidebar Navigation -->
+        <aside class="app-sidebar" id="appSidebar">
+            <div class="sidebar-header">
+                <a href="dashboard.html" class="brand-logo">
+                    <div class="brand-logo-icon">
+                        <i class="fa-solid fa-staff-snake"></i>
+                    </div>
+                    <span data-i18n="brandName">صيدلية د.مصطفى فتحي حامد</span>
+                </a>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span data-i18n="navDashboard">الرئيسية والإحصائيات</span>
+                </a>
+                <a href="orders.html" class="nav-item">
+                    <i class="fa-solid fa-boxes-packing"></i>
+                    <span data-i18n="navOrders">إدارة الطلبات</span>
+                    <span class="nav-badge" id="sidebarOrdersBadge">0</span>
+                </a>
+                <a href="customers.html" class="nav-item">
+                    <i class="fa-solid fa-users"></i>
+                    <span data-i18n="navCustomers">دليل العملاء</span>
+                </a>
+                <a href="consultations.html" class="nav-item">
+                    <i class="fa-solid fa-headset"></i>
+                    <span data-i18n="navConsultations">الاستشارات الصيدلانية</span>
+                    <span class="nav-badge" id="sidebarConsultationsBadge">0</span>
+                </a>
+                <a href="consultations-directory.html" class="nav-item">
+                    <i class="fa-solid fa-clipboard-user"></i>
+                    <span data-i18n="navConsultationsDirectory">دليل الاستشارات</span>
+                </a>
+
+                <div class="nav-section-title" data-i18n="navProducts">الأدوية والكتالوج</div>
+                <a href="products.html" class="nav-item">
+                    <i class="fa-solid fa-pills"></i>
+                    <span data-i18n="navProducts">دليل الأدوية والمنتجات</span>
+                </a>
+                <a href="categories.html" class="nav-item">
+                    <i class="fa-solid fa-tags"></i>
+                    <span data-i18n="navCategories">الأقسام والتصنيفات</span>
+                </a>
+                <a href="branches.html" class="nav-item active">
+                    <i class="fa-solid fa-hospital"></i>
+                    <span data-i18n="navBranches">الفروع ومنافذ البيع</span>
+                </a>
+
+                <div class="nav-section-title admin-only-nav" style="display:none" data-i18n="navStaff">الإدارة والتقارير</div>
+                <a href="staff.html" class="nav-item admin-only-nav" style="display:none">
+                    <i class="fa-solid fa-user-doctor"></i>
+                    <span data-i18n="navStaff">طاقم الصيادلة والمستخدمين</span>
+                </a>
+                <a href="reports.html" class="nav-item admin-only-nav" style="display:none">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span data-i18n="navReports">التقارير والمبيعات</span>
+                </a>
+
+                <div class="nav-section-title" data-i18n="navSettings">النظام</div>
+                <a href="settings.html" class="nav-item admin-only-nav" style="display:none">
+                    <i class="fa-solid fa-gear"></i>
+                    <span data-i18n="navSettings">إعدادات النظام</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-mini-card">
+                    <div class="user-avatar" id="sidebarUserAvatar">A</div>
+                    <div class="user-info">
+                        <div class="user-name" id="sidebarUserName">...</div>
+                        <div class="user-role-badge" id="sidebarUserRole">...</div>
+                    </div>
+                    <button class="btn-logout" onclick="auth.signOut()" title="تسجيل الخروج">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <div class="app-main">
+            <!-- Topbar -->
+            <header class="app-topbar">
+                <div class="topbar-left">
+                    <button class="btn-hamburger" id="btnHamburger">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <h1 class="topbar-title" data-i18n="navBranches">الفروع ومنافذ البيع</h1>
+                </div>
+
+                <div class="topbar-right">
+                    <div class="branch-indicator-badge" id="topbarBranchIndicator">
+                        <i class="fa-solid fa-hospital"></i> <span>جميع الفروع</span>
+                    </div>
+
+                    <button class="btn-icon" id="themeToggleBtn" onclick="toggleDashboardTheme()" title="الوضع الليلي">
+                        <i class="fa-solid fa-moon"></i>
+                    </button>
+
+                    <button class="btn-icon" onclick="notifications.clearUnread()" title="الإشعارات">
+                        <i class="fa-solid fa-bell"></i>
+                        <span class="notification-badge-dot" id="topbarNotificationDot"></span>
+                    </button>
+
+                    <button id="langSwitcherBtn" class="lang-switcher-btn" onclick="i18n.toggleLanguage()">
+                        <i class="fa-solid fa-globe"></i> <span>English</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <main class="page-content">
+                <div class="content-card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fa-solid fa-hospital-user" style="color: var(--primary);"></i>
+                            <span data-i18n="navBranches">فروع ومنافذ صيدلية د.مصطفى فتحي حامد</span>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <span class="badge badge-active" id="branchesCountBadge">0 فرع</span>
+                            <button class="btn btn-primary btn-sm admin-only" style="display:none" onclick="openAddBranchModal()" id="btnAddBranchBtn">
+                                <i class="fa-solid fa-plus"></i> <span data-i18n="addBranch">إضافة فرع جديد</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th data-i18n="branchNameAr">اسم الفرع</th>
+                                        <th data-i18n="branchGovernorate">المحافظة</th>
+                                        <th data-i18n="branchAddress">العنوان</th>
+                                        <th data-i18n="branchPhone">التليفون</th>
+                                        <th data-i18n="branchManager">مدير الفرع</th>
+                                        <th data-i18n="productActiveStatus">الحالة</th>
+                                        <th data-i18n="orderActions">إجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="branchesTableBody">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="empty-state" id="emptyBranchesState" style="display: none;">
+                            <i class="fa-solid fa-hospital"></i>
+                            <p data-i18n="noDataFound">لا توجد فروع مسجلة</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Add/Edit Branch Modal -->
+    <div class="modal-backdrop" id="branchModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h4 class="card-title" id="branchModalTitle" data-i18n="addBranch">إضافة فرع جديد</h4>
+                <button class="btn btn-icon btn-sm" onclick="closeBranchModal()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="branchForm" onsubmit="handleBranchFormSubmit(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="branchIdInput">
+                    
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="branchNameAr">اسم الفرع (بالعربية) *</label>
+                        <input type="text" id="branchNameArInput" class="form-control" required placeholder="مثال: فرع طناح - المنصورة - الدقهلية">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="branchNameEn">اسم الفرع (بالإنجليزية)</label>
+                        <input type="text" id="branchNameEnInput" class="form-control" placeholder="Example: Tanah Branch">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="branchGovernorate">المحافظة *</label>
+                        <select id="branchCitySelect" class="form-control" required onchange="handleGovernorateSelectChange(this.value)">
+                            <option value="" disabled selected data-i18n="selectGovernorate">-- اختر المحافظة --</option>
+                            <option value="الدقهلية">الدقهلية</option>
+                            <option value="المنصورة">المنصورة</option>
+                            <option value="القاهرة">القاهرة</option>
+                            <option value="الجيزة">الجيزة</option>
+                            <option value="الإسكندرية">الإسكندرية</option>
+                            <option value="القليوبية">القليوبية</option>
+                            <option value="الشرقية">الشرقية</option>
+                            <option value="الغربية">الغربية</option>
+                            <option value="المنوفية">المنوفية</option>
+                            <option value="دمياط">دمياط</option>
+                            <option value="كفر الشيخ">كفر الشيخ</option>
+                            <option value="البحيرة">البحيرة</option>
+                            <option value="الإسماعيلية">الإسماعيلية</option>
+                            <option value="بورسعيد">بورسعيد</option>
+                            <option value="السويس">السويس</option>
+                            <option value="الفيوم">الفيوم</option>
+                            <option value="بني سويف">بني سويف</option>
+                            <option value="المنيا">المنيا</option>
+                            <option value="أسيوط">أسيوط</option>
+                            <option value="سوهاج">سوهاج</option>
+                            <option value="قنا">قنا</option>
+                            <option value="الأقصر">الأقصر</option>
+                            <option value="أسوان">أسوان</option>
+                            <option value="البحر الأحمر">البحر الأحمر</option>
+                            <option value="الوادي الجديد">الوادي الجديد</option>
+                            <option value="مطروح">مطروح</option>
+                            <option value="شمال سيناء">شمال سيناء</option>
+                            <option value="جنوب سيناء">جنوب سيناء</option>
+                            <option value="other" data-i18n="otherGovernorate">أخرى (كتابة يدوية)</option>
+                        </select>
+                        <input type="text" id="branchCityCustomInput" class="form-control" style="display: none; margin-top: 0.5rem;" placeholder="اكتب اسم المحافظة أو المدينة...">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="branchAddress">العنوان التفصيلي *</label>
+                        <input type="text" id="branchAddressInput" class="form-control" required placeholder="الشارع - المدينة - المحافظة">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label" data-i18n="branchPhone">رقم التليفون</label>
+                        <input type="text" id="branchPhoneInput" class="form-control" placeholder="05XXXXXXXX">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="branchManager">مدير الفرع</label>
+                        <input type="text" id="branchManagerInput" class="form-control" placeholder="اسم مدير الفرع">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeBranchModal()" data-i18n="cancel">إلغاء</button>
+                    <button type="submit" class="btn btn-primary" data-i18n="saveBranch">حفظ الفرع</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/i18n.js"></script>
+    <script src="js/supabase.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/branches.js"></script>
+</body>
+</html>

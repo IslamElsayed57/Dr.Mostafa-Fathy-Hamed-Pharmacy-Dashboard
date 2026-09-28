@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>صيدلية د.مصطفى فتحي حامد - إدارة الطلبات</title>
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <div class="app-wrapper">
+        <!-- Sidebar Navigation -->
+        <aside class="app-sidebar" id="appSidebar">
+            <div class="sidebar-header">
+                <a href="dashboard.html" class="brand-logo">
+                    <div class="brand-logo-icon">
+                        <i class="fa-solid fa-staff-snake"></i>
+                    </div>
+                    <span data-i18n="brandName">صيدلية د.مصطفى فتحي حامد</span>
+                </a>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span data-i18n="navDashboard">الرئيسية والإحصائيات</span>
+                </a>
+                <a href="orders.html" class="nav-item active">
+                    <i class="fa-solid fa-boxes-packing"></i>
+                    <span data-i18n="navOrders">إدارة الطلبات</span>
+                    <span class="nav-badge" id="sidebarOrdersBadge">0</span>
+                </a>
+                <a href="customers.html" class="nav-item">
+                    <i class="fa-solid fa-users"></i>
+                    <span data-i18n="navCustomers">دليل العملاء</span>
+                </a>
+                <a href="consultations.html" class="nav-item">
+                    <i class="fa-solid fa-headset"></i>
+                    <span data-i18n="navConsultations">الاستشارات الصيدلانية</span>
+                    <span class="nav-badge" id="sidebarConsultationsBadge">0</span>
+                </a>
+                <a href="consultations-directory.html" class="nav-item">
+                    <i class="fa-solid fa-clipboard-user"></i>
+                    <span data-i18n="navConsultationsDirectory">دليل الاستشارات</span>
+                </a>
+
+                <div class="nav-section-title" data-i18n="navProducts">الأدوية والكتالوج</div>
+                <a href="products.html" class="nav-item">
+                    <i class="fa-solid fa-pills"></i>
+                    <span data-i18n="navProducts">دليل الأدوية والمنتجات</span>
+                </a>
+                <a href="categories.html" class="nav-item">
+                    <i class="fa-solid fa-tags"></i>
+                    <span data-i18n="navCategories">الأقسام والتصنيفات</span>
+                </a>
+                <a href="branches.html" class="nav-item">
+                    <i class="fa-solid fa-hospital"></i>
+                    <span data-i18n="navBranches">الفروع ومنافذ البيع</span>
+                </a>
+
+                <div class="nav-section-title admin-only-nav" style="display:none" data-i18n="navStaff">الإدارة والتقارير</div>
+                <a href="staff.html" class="nav-item admin-only-nav" style="display:none">
+                    <i class="fa-solid fa-user-doctor"></i>
+                    <span data-i18n="navStaff">طاقم الصيادلة والمستخدمين</span>
+                </a>
+                <a href="reports.html" class="nav-item admin-only-nav" style="display:none">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span data-i18n="navReports">التقارير والمبيعات</span>
+                </a>
+
+                <div class="nav-section-title" data-i18n="navSettings">النظام</div>
+                <a href="settings.html" class="nav-item admin-only-nav" style="display:none">
+                    <i class="fa-solid fa-gear"></i>
+                    <span data-i18n="navSettings">إعدادات النظام</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-mini-card">
+                    <div class="user-avatar" id="sidebarUserAvatar">A</div>
+                    <div class="user-info">
+                        <div class="user-name" id="sidebarUserName">...</div>
+                        <div class="user-role-badge" id="sidebarUserRole">...</div>
+                    </div>
+                    <button class="btn-logout" onclick="auth.signOut()" title="تسجيل الخروج">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <div class="app-main">
+            <!-- Topbar -->
+            <header class="app-topbar">
+                <div class="topbar-left">
+                    <button class="btn-hamburger" id="btnHamburger">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <h1 class="topbar-title" data-i18n="navOrders">إدارة الطلبات</h1>
+                </div>
+
+                <div class="topbar-right">
+                    <div class="branch-indicator-badge" id="topbarBranchIndicator">
+                        <i class="fa-solid fa-hospital"></i> <span>جميع الفروع</span>
+                    </div>
+
+                    <button class="btn-icon" id="themeToggleBtn" onclick="toggleDashboardTheme()" title="الوضع الليلي">
+                        <i class="fa-solid fa-moon"></i>
+                    </button>
+
+                    <button class="btn-icon" onclick="notifications.clearUnread()" title="الإشعارات">
+                        <i class="fa-solid fa-bell"></i>
+                        <span class="notification-badge-dot" id="topbarNotificationDot"></span>
+                    </button>
+
+                    <button id="langSwitcherBtn" class="lang-switcher-btn" onclick="i18n.toggleLanguage()">
+                        <i class="fa-solid fa-globe"></i> <span>English</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <main class="page-content">
+                <div class="content-card">
+                    <div class="card-body">
+                        <!-- Filters & Search Bar -->
+                        <div class="filter-bar">
+                            <div class="search-input-wrap">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input type="text" id="orderSearchInput" class="form-control" data-i18n-placeholder="searchPlaceholderOrders" placeholder="بحث باسم العميل، الهاتف، أو رقم الطلب...">
+                            </div>
+
+                            <select id="orderStatusFilter" class="form-control" style="max-width: 170px;">
+                                <option value="all" data-i18n="statusAll">جميع الحالات</option>
+                                <option value="new" data-i18n="statusNew">جديد</option>
+                                <option value="confirmed" data-i18n="statusConfirmed">مؤكد</option>
+                                <option value="ready" data-i18n="statusReady">جاهز</option>
+                                <option value="out_for_delivery" data-i18n="statusOutForDelivery">خرج للتوصيل</option>
+                                <option value="completed" data-i18n="statusCompleted">مكتمل</option>
+                                <option value="cancelled" data-i18n="statusCancelled">ملغي</option>
+                            </select>
+
+                            <select id="orderTypeFilter" class="form-control" style="max-width: 170px;">
+                                <option value="all" data-i18n="typeAll">جميع الأنواع</option>
+                                <option value="delivery" data-i18n="typeDelivery">توصيل للمنزل</option>
+                                <option value="pickup" data-i18n="typePickup">استلام من الصيدلية</option>
+                            </select>
+
+                            <select id="orderPeriodFilter" class="form-control" style="max-width: 170px;">
+                                <option value="all" data-i18n="filterPeriod">الفترة الزمنية (الكل)</option>
+                                <option value="today" data-i18n="periodToday">اليوم</option>
+                                <option value="yesterday" data-i18n="periodYesterday">أمس</option>
+                                <option value="week" data-i18n="periodThisWeek">هذا الأسبوع</option>
+                                <option value="month" data-i18n="periodThisMonth">هذا الشهر</option>
+                                <option value="custom" data-i18n="periodCustom">فترة مخصصة</option>
+                            </select>
+                        </div>
+
+                        <!-- Custom Date Range Row -->
+                        <div id="customDateRangeWrap" style="display: none; gap: 0.75rem; align-items: center; margin-bottom: 1.25rem; background: var(--bg-surface-subtle); padding: 0.75rem 1rem; border-radius: var(--radius-md);">
+                            <label style="font-size: 0.82rem; font-weight: 600;">من:</label>
+                            <input type="date" id="customStartDate" class="form-control" style="max-width: 160px;">
+                            <label style="font-size: 0.82rem; font-weight: 600;">إلى:</label>
+                            <input type="date" id="customEndDate" class="form-control" style="max-width: 160px;">
+                            <button class="btn btn-primary btn-sm" onclick="applyCustomDateFilter()" data-i18n="filterApply">تطبيق</button>
+                        </div>
+
+                        <!-- Orders Table -->
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th data-i18n="trackingCode">كود التتبع</th>
+                                        <th data-i18n="customer">العميل</th>
+                                        <th data-i18n="orderType">نوع الطلب</th>
+                                        <th data-i18n="orderTotal">الإجمالي</th>
+                                        <th data-i18n="orderStatus">الحالة</th>
+                                        <th data-i18n="orderDate">التاريخ</th>
+                                        <th data-i18n="orderActions">إجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ordersTableBody">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="empty-state" id="emptyOrdersState" style="display: none;">
+                            <i class="fa-solid fa-boxes-packing"></i>
+                            <p data-i18n="noDataFound">لا توجد طلبات مطابقة للشروط</p>
+                        </div>
+
+                        <!-- Pagination Footer -->
+                        <div id="ordersPagination"></div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/i18n.js"></script>
+    <script src="js/supabase.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/orders.js"></script>
+</body>
+</html>

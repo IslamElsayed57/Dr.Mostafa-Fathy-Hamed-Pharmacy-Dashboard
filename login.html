@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول - صيدلية د.مصطفى فتحي حامد</title>
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #2B1D14 0%, #3A2315 100%); padding: 1.5rem;">
+
+    <div style="position: absolute; top: 1.5rem; inset-inline-end: 1.5rem; display: flex; gap: 0.5rem; align-items: center;">
+        <button id="themeToggleBtn" class="btn-icon" onclick="toggleDashboardTheme()" style="background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.2);">
+            <i class="fa-solid fa-moon"></i>
+        </button>
+        <button id="langSwitcherBtn" class="lang-switcher-btn" onclick="i18n.toggleLanguage()" style="background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.2);">
+            <i class="fa-solid fa-globe"></i> <span>English</span>
+        </button>
+    </div>
+
+    <div class="modal-card" style="max-width: 440px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); padding: 2.5rem 2rem;">
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <div class="brand-logo-icon" style="width: 56px; height: 56px; margin: 0 auto 1rem; font-size: 1.75rem; border-radius: var(--radius-lg);">
+                <i class="fa-solid fa-staff-snake"></i>
+            </div>
+            <h2 data-i18n="brandName" style="color: var(--text-main); font-size: 1.5rem; margin-bottom: 0.25rem;">صيدلية د.مصطفى فتحي حامد</h2>
+            <p data-i18n="loginSubtitle" style="color: var(--text-muted); font-size: 0.85rem;">أدخل بيانات حسابك للمتابعة</p>
+        </div>
+
+        <form id="loginForm" onsubmit="handleLoginSubmit(event)">
+            <div class="form-group">
+                <label class="form-label" data-i18n="staffEmail">البريد الإلكتروني</label>
+                <div class="search-input-wrap">
+                    <i class="fa-solid fa-envelope"></i>
+                    <input type="email" id="loginEmail" class="form-control" data-i18n-placeholder="emailPlaceholder" placeholder="name@pharmacy.com" required autofocus>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.75rem;">
+                <label class="form-label" data-i18n="passwordPlaceholder">كلمة المرور</label>
+                <div class="search-input-wrap">
+                    <i class="fa-solid fa-lock"></i>
+                    <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required>
+                </div>
+            </div>
+
+            <button type="submit" id="btnLoginSubmit" class="btn btn-primary" style="width: 100%; padding: 0.75rem; font-size: 1rem;">
+                <i class="fa-solid fa-right-to-bracket"></i>
+                <span data-i18n="loginBtn">دخول لوحة التحكم</span>
+            </button>
+        </form>
+
+        <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); text-align: center; font-size: 0.78rem; color: var(--text-muted);">
+            <i class="fa-solid fa-shield-halved" style="color: var(--primary);"></i>
+            <span data-i18n="brandSubtitle">لوحة التحكم الصيدلانية</span> &bull; 2026
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/i18n.js"></script>
+    <script src="js/supabase.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/utils.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            auth.init(true); // check if already logged in
+        });
+
+        async function handleLoginSubmit(e) {
+            e.preventDefault();
+            const email = document.getElementById("loginEmail").value.trim();
+            const password = document.getElementById("loginPassword").value;
+            const btn = document.getElementById("btnLoginSubmit");
+
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${i18n.t("loadingData")}`;
+
+            const res = await auth.signIn(email, password);
+
+            if (res.success) {
+                utils.showToast(i18n.t("loginSuccess"), "success");
+                setTimeout(() => { window.location.href = "dashboard.html"; }, 300);
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-right-to-bracket"></i> <span>${i18n.t("loginBtn")}</span>`;
+                utils.showToast(res.error || i18n.t("loginError"), "error");
+            }
+        }
+    </script>
+</body>
+</html>

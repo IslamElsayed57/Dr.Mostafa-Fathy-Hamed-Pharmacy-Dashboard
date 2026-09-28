@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>صيدلية د.مصطفى فتحي حامد - تفاصيل الطلب</title>
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <div class="app-wrapper">
+        <!-- Sidebar Navigation -->
+        <aside class="app-sidebar" id="appSidebar">
+            <div class="sidebar-header">
+                <a href="dashboard.html" class="brand-logo">
+                    <div class="brand-logo-icon">
+                        <i class="fa-solid fa-staff-snake"></i>
+                    </div>
+                    <span data-i18n="brandName">صيدلية د.مصطفى فتحي حامد</span>
+                </a>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span data-i18n="navDashboard">الرئيسية والإحصائيات</span>
+                </a>
+                <a href="orders.html" class="nav-item active">
+                    <i class="fa-solid fa-boxes-packing"></i>
+                    <span data-i18n="navOrders">إدارة الطلبات</span>
+                    <span class="nav-badge" id="sidebarOrdersBadge">0</span>
+                </a>
+                <a href="customers.html" class="nav-item">
+                    <i class="fa-solid fa-users"></i>
+                    <span data-i18n="navCustomers">دليل العملاء</span>
+                </a>
+                <a href="consultations.html" class="nav-item">
+                    <i class="fa-solid fa-headset"></i>
+                    <span data-i18n="navConsultations">الاستشارات الصيدلانية</span>
+                    <span class="nav-badge" id="sidebarConsultationsBadge">0</span>
+                </a>
+                <a href="consultations-directory.html" class="nav-item">
+                    <i class="fa-solid fa-clipboard-user"></i>
+                    <span data-i18n="navConsultationsDirectory">دليل الاستشارات</span>
+                </a>
+
+                <div class="nav-section-title" data-i18n="navProducts">الأدوية والكتالوج</div>
+                <a href="products.html" class="nav-item">
+                    <i class="fa-solid fa-pills"></i>
+                    <span data-i18n="navProducts">دليل الأدوية والمنتجات</span>
+                </a>
+                <a href="categories.html" class="nav-item">
+                    <i class="fa-solid fa-tags"></i>
+                    <span data-i18n="navCategories">الأقسام والتصنيفات</span>
+                </a>
+                <a href="branches.html" class="nav-item">
+                    <i class="fa-solid fa-hospital"></i>
+                    <span data-i18n="navBranches">الفروع ومنافذ البيع</span>
+                </a>
+
+                <div class="nav-section-title admin-only-nav" style="display:none" data-i18n="navStaff">الإدارة والتقارير</div>
+                <a href="staff.html" class="nav-item admin-only-nav" style="display:none">
+                    <i class="fa-solid fa-user-doctor"></i>
+                    <span data-i18n="navStaff">طاقم الصيادلة والمستخدمين</span>
+                </a>
+                <a href="reports.html" class="nav-item admin-only-nav" style="display:none">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span data-i18n="navReports">التقارير والمبيعات</span>
+                </a>
+
+                <div class="nav-section-title" data-i18n="navSettings">النظام</div>
+                <a href="settings.html" class="nav-item admin-only-nav" style="display:none">
+                    <i class="fa-solid fa-gear"></i>
+                    <span data-i18n="navSettings">إعدادات النظام</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-mini-card">
+                    <div class="user-avatar" id="sidebarUserAvatar">A</div>
+                    <div class="user-info">
+                        <div class="user-name" id="sidebarUserName">...</div>
+                        <div class="user-role-badge" id="sidebarUserRole">...</div>
+                    </div>
+                    <button class="btn-logout" onclick="auth.signOut()" title="تسجيل الخروج">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <div class="app-main">
+            <!-- Topbar -->
+            <header class="app-topbar">
+                <div class="topbar-left">
+                    <button class="btn-hamburger" id="btnHamburger">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <a href="orders.html" class="btn btn-secondary btn-sm" style="margin-inline-end: 0.5rem;">
+                        <i class="fa-solid fa-arrow-right"></i> <span data-i18n="navOrders">العودة للطلبات</span>
+                    </a>
+                    <h1 class="topbar-title" id="orderDetailTitle">تفاصيل الطلب</h1>
+                </div>
+
+                <div class="topbar-right">
+                    <div class="branch-indicator-badge" id="topbarBranchIndicator">
+                        <i class="fa-solid fa-hospital"></i> <span>جميع الفروع</span>
+                    </div>
+
+                    <button class="btn-icon" id="themeToggleBtn" onclick="toggleDashboardTheme()" title="الوضع الليلي">
+                        <i class="fa-solid fa-moon"></i>
+                    </button>
+
+                    <button class="btn-icon" onclick="notifications.clearUnread()" title="الإشعارات">
+                        <i class="fa-solid fa-bell"></i>
+                        <span class="notification-badge-dot" id="topbarNotificationDot"></span>
+                    </button>
+
+                    <button id="langSwitcherBtn" class="lang-switcher-btn" onclick="i18n.toggleLanguage()">
+                        <i class="fa-solid fa-globe"></i> <span>English</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <main class="page-content">
+                <!-- Status & Workflow Actions Bar -->
+                <div class="content-card" style="padding: 1.25rem 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; border-inline-start: 5px solid var(--primary);">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <span id="orderDetailStatusBadge"></span>
+                        <span id="orderDetailTypeBadge"></span>
+                    </div>
+                    <div id="orderWorkflowActions" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <!-- Buttons rendered dynamically -->
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;" class="order-details-grid">
+                    <!-- Left Column: Products & Financials -->
+                    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                        <!-- Products Table Card -->
+                        <div class="content-card">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fa-solid fa-pills" style="color: var(--primary);"></i>
+                                    <span data-i18n="navProducts">الأدوية والمطلوبات</span>
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th data-i18n="productNameAr">المنتج / الدواء</th>
+                                            <th>الكمية</th>
+                                            <th>سعر الوحدة</th>
+                                            <th>الإجمالي</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="orderItemsTableBody">
+                                        <!-- Items loaded dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div style="padding: 1.25rem 1.5rem; background: var(--bg-surface-subtle); border-top: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end;">
+                                <div style="display: flex; justify-content: space-between; width: 220px; font-size: 0.9rem; color: var(--text-muted);">
+                                    <span>المجموع الفرعي:</span>
+                                    <strong id="orderSubtotal">0.00 ج.م</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; width: 220px; font-size: 0.9rem; color: var(--text-muted);">
+                                    <span>خدمة التوصيل:</span>
+                                    <strong id="orderDeliveryFee">0.00 ج.م</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; width: 220px; font-size: 1.15rem; color: var(--primary); border-top: 1px solid var(--border-color); padding-top: 0.5rem;">
+                                    <span data-i18n="orderTotal">الإجمالي النهائي:</span>
+                                    <strong id="orderGrandTotal">0.00 ج.م</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Prescription Card -->
+                        <div class="content-card">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fa-solid fa-file-prescription" style="color: var(--primary);"></i>
+                                    <span data-i18n="prescriptionTitle">صورة الروشتة المرفقة</span>
+                                </div>
+                            </div>
+                            <div class="card-body" id="orderPrescriptionContainer">
+                                <!-- Loaded dynamically via signed URL -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Customer & Delivery Info -->
+                    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                        <!-- Customer Info Card -->
+                        <div class="content-card">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fa-solid fa-user" style="color: var(--primary);"></i>
+                                    <span data-i18n="customer">بيانات المريض / العميل</span>
+                                </div>
+                            </div>
+                            <div class="card-body" style="display: flex; flex-direction: column; gap: 1rem; font-size: 0.9rem;">
+                                <div>
+                                    <small style="color: var(--text-muted); display: block;" data-i18n="customerName">اسم العميل</small>
+                                    <strong id="orderCustomerName" style="font-size: 1rem;">-</strong>
+                                </div>
+                                <div>
+                                    <small style="color: var(--text-muted); display: block;" data-i18n="customerPhone">رقم التليفون</small>
+                                    <div id="orderCustomerPhone">-</div>
+                                </div>
+                                <div>
+                                    <small style="color: var(--text-muted); display: block;" data-i18n="orderBranch">الفرع المسؤول</small>
+                                    <strong id="orderAssignedBranch">-</strong>
+                                </div>
+                                <div>
+                                    <small style="color: var(--text-muted); display: block;" data-i18n="orderDate">تاريخ وتوقيت الطلب</small>
+                                    <span id="orderCreatedAt" style="color: var(--text-main); font-weight: 600;">-</span>
+                                </div>
+                                <div>
+                                    <small style="color: var(--text-muted); display: block;" data-i18n="deliveryAddress">عنوان التوصيل أو الاستلام</small>
+                                    <p id="orderCustomerAddress" style="white-space: pre-line; background: var(--bg-surface-subtle); padding: 0.75rem; border-radius: var(--radius-md); font-size: 0.85rem; margin-top: 0.25rem;">-</p>
+                                </div>
+                                <div>
+                                    <small style="color: var(--text-muted); display: block;" data-i18n="orderNotes">ملاحظات العميل</small>
+                                    <p id="orderCustomerNotes" style="white-space: pre-line; color: var(--text-muted); font-size: 0.85rem;">-</p>
+                                </div>
+                                <div id="orderCancellationReasonContainer" style="display: none;">
+                                    <small style="color: var(--danger); font-weight: 700; display: flex; align-items: center; gap: 0.35rem;">
+                                        <i class="fa-solid fa-ban"></i> <span data-i18n="cancellationReason">سبب الإلغاء</span>
+                                    </small>
+                                    <p id="orderCancellationReasonText" style="white-space: pre-line; color: var(--danger); font-weight: 600; background: rgba(239, 68, 68, 0.08); padding: 0.75rem; border-radius: var(--radius-md); border-inline-start: 4px solid var(--danger); margin-top: 0.25rem; font-size: 0.88rem;">-</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Status Timeline Audit Card -->
+                        <div class="content-card">
+                            <div class="card-header">
+                                <div class="card-title" style="font-size: 0.95rem;">
+                                    <i class="fa-solid fa-timeline" style="color: var(--primary);"></i>
+                                    <span>سجل تغييرات الحالة</span>
+                                </div>
+                            </div>
+                            <div class="card-body" id="orderStatusHistoryTimeline">
+                                <!-- Loaded dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Cancel Order Reason Modal -->
+    <div id="cancelOrderModal" class="modal-backdrop">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h4 class="card-title" style="color: var(--danger);">
+                    <i class="fa-solid fa-ban"></i> <span data-i18n="cancelOrderModalTitle">إلغاء الطلب</span>
+                </h4>
+                <button class="btn btn-icon btn-sm" onclick="closeCancelOrderModal()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 1.1rem;">
+                <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5;">
+                    يرجى توضيح سبب إلغاء هذا الطلب ليتم حفظه في سجل الطلبات وعرضه في بيانات الطلب الملغي:
+                </p>
+                
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-main);" data-i18n="cancelOrderQuickOptions">
+                        خيارات وأسباب شائعة:
+                    </label>
+                    <div class="cancellation-chips" style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
+                        <button type="button" class="btn-chip" onclick="setCancelReasonText('طلب العميل إلغاء الطلب')">طلب العميل</button>
+                        <button type="button" class="btn-chip" onclick="setCancelReasonText('عدم توفر بعض الأصناف أو الأدوية المطلوبة في الفرع')">عدم توفر الأدوية</button>
+                        <button type="button" class="btn-chip" onclick="setCancelReasonText('العنوان غير واضح أو خارج نطاق التوصيل المتاح')">خارج نطاق التوصيل</button>
+                        <button type="button" class="btn-chip" onclick="setCancelReasonText('تعذر التواصل مع العميل (الهاتف مغلق / لا يوجد رد)')">الهاتف لا يرد</button>
+                        <button type="button" class="btn-chip" onclick="setCancelReasonText('طلب مكرر بالخطأ من العميل')">طلب مكرر</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="cancelReasonInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem; color: var(--text-main);">
+                        <span data-i18n="cancelOrderReasonLabel">سبب إلغاء الطلب</span> <span style="color: var(--danger);">*</span>:
+                    </label>
+                    <textarea id="cancelReasonInput" class="form-control" rows="3" data-i18n-placeholder="cancelOrderReasonPlaceholder" placeholder="اكتب سبب إلغاء الطلب بالتفصيل هنا..." style="resize: vertical;"></textarea>
+                    <small id="cancelReasonError" style="display: none; color: var(--danger); font-size: 0.8rem; margin-top: 0.35rem; font-weight: 600;">
+                        <i class="fa-solid fa-circle-exclamation"></i> <span data-i18n="cancelOrderReasonRequired">يرجى كتابة أو اختيار سبب لإلغاء هذا الطلب</span>
+                    </small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeCancelOrderModal()" data-i18n="cancel">تراجع</button>
+                <button class="btn btn-danger" id="confirmCancelOrderBtn" onclick="submitCancelOrder()">
+                    <i class="fa-solid fa-ban"></i> <span data-i18n="cancelOrderConfirmBtn">تأكيد إلغاء الطلب</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/i18n.js"></script>
+    <script src="js/supabase.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/order-details.js"></script>
+</body>
+</html>
