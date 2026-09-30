@@ -131,7 +131,11 @@ const utils = {
         if (type === "error") icon = "fa-circle-exclamation";
         if (type === "info") icon = "fa-bell";
 
-        toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${message}</span>`;
+        const iconEl = document.createElement("i");
+        iconEl.className = `fa-solid ${icon}`;
+        const messageEl = document.createElement("span");
+        messageEl.textContent = String(message == null ? "" : message);
+        toast.append(iconEl, messageEl);
         container.appendChild(toast);
 
         setTimeout(() => {

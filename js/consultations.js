@@ -97,9 +97,9 @@ function getConsultBranchBadge(consult) {
     const fullName = ar ? b.name_ar : (b.name_en || b.name_ar);
     const shortName = String(fullName || "").split(" - ")[0];
     const tip = (ar ? "تم تغيير حالة الاستشارة بواسطة " : "Status changed by ") + String(fullName || "");
-    const safeTitle = tip.replace(/"/g, "&quot;");
+    const safeTitle = utils.escHtml(tip);
 
-    return `<span class="badge badge-delivery" title="${safeTitle}"><i class="fa-solid fa-store"></i> ${shortName}</span>`;
+    return `<span class="badge badge-delivery" title="${safeTitle}"><i class="fa-solid fa-store"></i> ${utils.escHtml(shortName)}</span>`;
 }
 
 /**
@@ -147,8 +147,8 @@ async function loadConsultations() {
         // branch are read-only for it (see getConsultLockInfo / RLS).
 
         if (consultsState.searchQuery) {
-            const sq = consultsState.searchQuery;
-            query = query.or(`patient_name.ilike.%${sq}%,phone.ilike.%${sq}%`);
+            const sq = consultsState.searchQuery.replace(/\\/g, "\\\\").replace(/"/g, "\\\"");
+            query = query.or(`patient_name.ilike."%${sq}%",phone.ilike."%${sq}%"`);
         }
 
         if (consultsState.statusFilter && consultsState.statusFilter !== "all") {
@@ -353,7 +353,7 @@ async function openConsultationDetails(id) {
             footerHtml = `
                 <div style="display:flex;align-items:center;gap:0.6rem;width:100%;color:var(--text-muted);font-size:0.88rem;">
                     <i class="fa-solid fa-lock" style="color:#DC2626;"></i>
-                    <span>${lockMsg}</span>
+                    <span>${utils.escHtml(lockMsg)}</span>
                 </div>
             `;
         } else {
@@ -363,8 +363,8 @@ async function openConsultationDetails(id) {
             const claimHint = lock.willClaim
                 ? `<div style="width:100%;font-size:0.82rem;color:var(--text-muted);">
                         <i class="fa-solid fa-circle-info"></i>
-                        ${ar ? `عند تغيير الحالة سيتم ربط الاستشارة بفرعك (${myBranchName}) ولن يُسمح لباقي الفروع بتغييرها.`
-                             : `Changing the status links this consultation to your branch (${myBranchName}); other branches will not be able to change it.`}
+                        ${utils.escHtml(ar ? `عند تغيير الحالة سيتم ربط الاستشارة بفرعك (${myBranchName}) ولن يُسمح لباقي الفروع بتغييرها.`
+                             : `Changing the status links this consultation to your branch (${myBranchName}); other branches will not be able to change it.`)}
                    </div>`
                 : "";
 

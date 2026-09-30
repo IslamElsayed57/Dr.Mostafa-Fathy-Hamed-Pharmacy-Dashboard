@@ -94,7 +94,7 @@ function renderBranchesTable() {
             : `<span class="badge badge-inactive">${i18n.t("deactivate")}</span>`;
 
         const displayGov = formatGovernorate(b.city);
-        const govBadge = `<span class="badge" style="background: rgba(16, 185, 129, 0.12); color: var(--primary); font-weight: 600; white-space: nowrap;"><i class="fa-solid fa-location-dot" style="margin-left: 4px;"></i>${displayGov}</span>`;
+        const govBadge = `<span class="badge" style="background: rgba(16, 185, 129, 0.12); color: var(--primary); font-weight: 600; white-space: nowrap;"><i class="fa-solid fa-location-dot" style="margin-left: 4px;"></i>${utils.escHtml(displayGov)}</span>`;
 
         let actionBtns = "-";
         if (canEdit) {
@@ -112,11 +112,11 @@ function renderBranchesTable() {
 
         return `
             <tr>
-                <td><strong>${name}</strong></td>
+                <td><strong>${utils.escHtml(name)}</strong></td>
                 <td>${govBadge}</td>
-                <td><small style="color: var(--text-muted);">${b.address}</small></td>
-                <td><a href="tel:${b.phone}" style="color: var(--primary); font-weight: 600;">${b.phone || '-'}</a></td>
-                <td>${b.manager || '-'}</td>
+                <td><small style="color: var(--text-muted);">${utils.escHtml(b.address || "-")}</small></td>
+                <td><a href="tel:${utils.escHtml(String(b.phone || "").replace(/[^+0-9]/g, ""))}" style="color: var(--primary); font-weight: 600;">${utils.escHtml(b.phone || "-")}</a></td>
+                <td>${utils.escHtml(b.manager || "-")}</td>
                 <td>${statusBadge}</td>
                 <td>${actionBtns}</td>
             </tr>

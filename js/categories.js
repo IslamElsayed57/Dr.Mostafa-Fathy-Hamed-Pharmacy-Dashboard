@@ -86,10 +86,10 @@ function renderCategoriesTable() {
                     <button class="btn btn-icon btn-sm" onclick="toggleCategoryExpand('${cat.id}')" id="expandBtn-${cat.id}" title="عرض الفئات الفرعية">
                         <i class="fa-solid fa-chevron-down"></i>
                     </button>
-                    <strong>${name}</strong>
+                    <strong>${utils.escHtml(name)}</strong>
                 </td>
-                <td><small style="color: var(--text-muted);">${subName}</small></td>
-                <td><code>${cat.slug}</code></td>
+                <td><small style="color: var(--text-muted);">${utils.escHtml(subName)}</small></td>
+                <td><code>${utils.escHtml(cat.slug)}</code></td>
                 <td>${statusBadge}</td>
                 <td>${actionBtns}</td>
             </tr>
@@ -192,9 +192,9 @@ function renderSubcategoriesForCategory(categoryId) {
         return `
             <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px dashed var(--border-color);">
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <i class="fa-solid ${s.icon || 'fa-pills'}" style="color: var(--primary);"></i>
-                    <strong>${s.name_ar}</strong>
-                    ${s.name_en ? `<small style="color: var(--text-muted);">(${s.name_en})</small>` : ""}
+                    <i class="fa-solid ${utils.escHtml(s.icon || 'fa-pills')}" style="color: var(--primary);"></i>
+                    <strong>${utils.escHtml(s.name_ar)}</strong>
+                    ${s.name_en ? `<small style="color: var(--text-muted);">(${utils.escHtml(s.name_en)})</small>` : ""}
                     ${statusBadge}
                 </div>
                 <div style="display: flex; gap: 0.35rem;">${actionBtns}</div>

@@ -33,7 +33,7 @@ async function loadBranchesDropdown() {
         const select = document.getElementById("staffBranchSelect");
         if (select) {
             select.innerHTML = `<option value="">${i18n.currentLang === "ar" ? "-- بدون فرع محدد (إدارة عامة) --" : "-- No Specific Branch --"}</option>` +
-                branchesList.map(b => `<option value="${b.id}">${i18n.currentLang === "en" ? (b.name_en || b.name_ar) : b.name_ar}</option>`).join("");
+                branchesList.map(b => `<option value="${utils.escHtml(b.id)}">${utils.escHtml(i18n.currentLang === "en" ? (b.name_en || b.name_ar) : b.name_ar)}</option>`).join("");
         }
     } catch (e) {
         console.error("Staff branches dropdown error:", e);
@@ -112,11 +112,11 @@ function renderStaffTable() {
         return `
             <tr>
                 <td>
-                    <div style="font-weight: 600;">${s.full_name}</div>
+                    <div style="font-weight: 600;">${utils.escHtml(s.full_name)}</div>
                 </td>
-                <td><a href="tel:${s.mobile}" style="color: var(--primary); font-weight: 600;">${s.mobile || "-"}</a></td>
+                <td><a href="tel:${utils.escHtml(String(s.mobile || "").replace(/[^+0-9]/g, ""))}" style="color: var(--primary); font-weight: 600;">${utils.escHtml(s.mobile || "-")}</a></td>
                 <td>${roleBadge}</td>
-                <td><small style="color: var(--text-muted); font-weight: 600;">${branchName}</small></td>
+                <td><small style="color: var(--text-muted); font-weight: 600;">${utils.escHtml(branchName)}</small></td>
                 <td>${statusBadge}</td>
                 <td>${actionBtns}</td>
             </tr>

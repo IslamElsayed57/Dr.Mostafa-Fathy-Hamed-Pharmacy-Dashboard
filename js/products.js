@@ -73,7 +73,7 @@ function populateCategoryFilter() {
     const selected = productFilterState.categoryId;
     select.innerHTML = `<option value="all">${i18n.currentLang === "ar" ? "جميع الأقسام" : "All Categories"}</option>` +
         categoriesList.map(c => `
-            <option value="${c.id}">${i18n.currentLang === "en" ? (c.name_en || c.name_ar) : c.name_ar}</option>
+            <option value="${utils.escHtml(c.id)}">${utils.escHtml(i18n.currentLang === "en" ? (c.name_en || c.name_ar) : c.name_ar)}</option>
         `).join("");
 
     // Preserve selection if it still exists after refresh
@@ -95,7 +95,7 @@ async function loadCategoriesDropdown() {
         if (select) {
             select.innerHTML = `<option value="">${i18n.currentLang === "ar" ? "-- اختر القسم --" : "-- Select Category --"}</option>` +
                 categoriesList.map(c => `
-                    <option value="${c.id}">${i18n.currentLang === "en" ? (c.name_en || c.name_ar) : c.name_ar}</option>
+                    <option value="${utils.escHtml(c.id)}">${utils.escHtml(i18n.currentLang === "en" ? (c.name_en || c.name_ar) : c.name_ar)}</option>
                 `).join("");
         }
 
@@ -131,7 +131,7 @@ async function loadSubcategoriesDropdown(categoryId, selectedSubcategoryId = "")
         const list = data || [];
         select.innerHTML = `<option value="">-- بدون فئة فرعية --</option>` +
             list.map(s => `
-                <option value="${s.id}">${i18n.currentLang === "en" ? (s.name_en || s.name_ar) : s.name_ar}</option>
+                <option value="${utils.escHtml(s.id)}">${utils.escHtml(i18n.currentLang === "en" ? (s.name_en || s.name_ar) : s.name_ar)}</option>
             `).join("");
 
         if (selectedSubcategoryId) {
@@ -204,8 +204,8 @@ function renderProductsTable(items = productsList) {
             : `<span class="badge badge-inactive">${i18n.t("deactivate")}</span>`;
 
         const imgHtml = p.image_url 
-            ? `<img src="${p.image_url}" alt="${name}" style="width: 44px; height: 44px; object-fit: contain; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">`
-            : `<div style="width: 44px; height: 44px; border-radius: var(--radius-sm); background: var(--bg-surface-subtle); display: flex; align-items: center; justify-content: center; color: var(--primary);"><i class="fa-solid ${p.icon || 'fa-pills'}"></i></div>`;
+            ? `<img src="${utils.escHtml(p.image_url)}" alt="${utils.escHtml(name)}" style="width: 44px; height: 44px; object-fit: contain; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">`
+            : `<div style="width: 44px; height: 44px; border-radius: var(--radius-sm); background: var(--bg-surface-subtle); display: flex; align-items: center; justify-content: center; color: var(--primary);"><i class="fa-solid ${utils.escHtml(p.icon || 'fa-pills')}"></i></div>`;
 
         let actionBtns = "-";
         if (canEdit) {
@@ -231,10 +231,10 @@ function renderProductsTable(items = productsList) {
                 ${checkCell}
                 <td>${imgHtml}</td>
                 <td>
-                    <div style="font-weight: 600;">${name}</div>
-                    <small style="color: var(--text-muted);">${subName}</small>
+                    <div style="font-weight: 600;">${utils.escHtml(name)}</div>
+                    <small style="color: var(--text-muted);">${utils.escHtml(subName)}</small>
                 </td>
-                <td><span class="badge badge-delivery">${catName}</span></td>
+                <td><span class="badge badge-delivery">${utils.escHtml(catName)}</span></td>
                 <td><strong>${price}</strong> ${oldPrice}</td>
                 <td>${statusBadge}</td>
                 <td>${actionBtns}</td>

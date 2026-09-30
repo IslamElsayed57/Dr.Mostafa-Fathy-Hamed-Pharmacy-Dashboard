@@ -52,7 +52,7 @@ async function loadCustomers() {
         // Fetch orders to aggregate customer summaries
         const { data, error } = await client
             .from("orders")
-            .select("id, customer_name, phone, created_at, total, status")
+            .select("id, tracking_code, customer_name, phone, created_at, total, status")
             .order("created_at", { ascending: false });
 
         if (error) throw error;
@@ -172,7 +172,7 @@ function viewCustomerOrdersModal(customerIndex) {
     const body = document.getElementById("custModalOrdersBody");
     body.innerHTML = cust.orders.map(o => `
         <tr>
-            <td><a href="order-details.html?id=${o.id}" style="color: var(--primary); font-weight: 600;">#${o.tracking_code || o.id}</a></td>
+            <td><a href="order-details.html?id=${encodeURIComponent(o.id)}" style="color: var(--primary); font-weight: 600;">#${utils.escHtml(o.tracking_code || o.id)}</a></td>
             <td>${utils.formatCurrency(o.total || 0)}</td>
             <td>${utils.getStatusBadge(o.status)}</td>
             <td>${utils.formatDate(o.created_at, false)}</td>
