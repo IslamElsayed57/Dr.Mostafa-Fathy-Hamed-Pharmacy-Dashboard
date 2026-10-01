@@ -22,6 +22,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     notifications.init();
     setupOrdersEventListeners();
+    initializePrintDateRange("ordersPrintFrom", "ordersPrintTo");
     await loadOrders();
 
     window.onNewRealtimeOrder = () => loadOrders();
@@ -41,6 +42,65 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     };
 });
+
+function initializePrintDateRange(fromId, toId) {
+    const today = new Date();
+    const localDate = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    const from = document.getElementById(fromId);
+    const to = document.getElementById(toId);
+    if (from) from.value = `${today.getFullYear()}-01-01`;
+    if (to) to.value = localDate(today);
+}
+
+function dateRangeBounds(fromValue, toValue) {
+    if (!fromValue || !toValue || fromValue > toValue) throw new Error(i18n.currentLang === "en" ? "Choose a valid start and end date." : "اختر تاريخ بداية ونهاية صحيحين.");
+    const [fy, fm, fd] = fromValue.split("-").map(Number);
+    const [ty, tm, td] = toValue.split("-").map(Number);
+    return {
+        from: new Date(fy, fm - 1, fd).toISOString(),
+        toExclusive: new Date(ty, tm - 1, td + 1).toISOString()
+    };
+}
+
+async function exportOrdersByDateRange() {
+    const button = document.getElementById("exportOrdersBtn");
+    try {
+        if (typeof XLSX === "undefined") throw new Error(i18n.currentLang === "en" ? "Excel export is unavailable. Reload the page and try again." : "ميزة Excel غير متاحة الآن. أعد تحميل الصفحة وحاول مرة أخرى.");
+        const range = dateRangeBounds(document.getElementById("ordersPrintFrom")?.value, document.getElementById("ordersPrintTo")?.value);
+        if (button) button.disabled = true;
+        let query = db.getClient().from("orders")
+            .select("id, customer_id, customer_name, phone, tracking_code, order_type, delivery_method, address, medications, notes, prescription_url, prescription_path, subtotal, delivery_fee, total, status, cancellation_reason, branch_id, created_at, updated_at, order_items(product_name_snapshot, quantity, unit_price, total_price)")
+            .gte("created_at", range.from).lt("created_at", range.toExclusive)
+            .order("created_at", { ascending: false });
+        if (auth.isPharmacist() && auth.getUserBranchId()) query = query.or(`branch_id.eq.${auth.getUserBranchId()},branch_id.is.null`);
+
+        const orders = [];
+        for (let offset = 0; ; offset += 500) {
+            const { data, error } = await query.range(offset, offset + 499);
+            if (error) throw error;
+            const batch = data || [];
+            orders.push(...batch);
+            if (batch.length < 500) break;
+        }
+        const headers = i18n.currentLang === "en"
+            ? ["Order ID", "Customer ID", "Tracking code", "Customer", "Phone", "Order type", "Address", "Medications", "Notes", "Prescription reference", "Items", "Subtotal", "Delivery fee", "Total", "Status", "Cancellation reason", "Branch ID", "Created at", "Updated at"]
+            : ["رقم الطلب", "معرف العميل", "كود التتبع", "العميل", "الهاتف", "نوع الطلب", "العنوان", "الأدوية", "ملاحظات", "مرجع الروشتة", "الأصناف", "المجموع الفرعي", "رسوم التوصيل", "الإجمالي", "الحالة", "سبب الإلغاء", "معرف الفرع", "تاريخ الإنشاء", "آخر تحديث"];
+        const rows = orders.map(order => {
+            const items = (order.order_items || []).map(item => `${item.product_name_snapshot} × ${item.quantity} (${item.unit_price} / ${item.total_price})`).join(" | ");
+            return [order.id, order.customer_id || "", order.tracking_code || "", order.customer_name || "", order.phone || "", order.order_type || order.delivery_method || "", order.address || "", order.medications || "", order.notes || "", order.prescription_path || order.prescription_url || "", items, Number(order.subtotal || 0), Number(order.delivery_fee || 0), Number(order.total || 0), order.status || "", order.cancellation_reason || "", order.branch_id || "", order.created_at || "", order.updated_at || ""];
+        });
+        const workbook = XLSX.utils.book_new();
+        const sheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+        sheet["!cols"] = headers.map((_, index) => ({ wch: index >= 6 && index <= 10 ? 32 : 20 }));
+        XLSX.utils.book_append_sheet(workbook, sheet, i18n.currentLang === "en" ? "Orders" : "الطلبات");
+        XLSX.writeFile(workbook, `pharmacy-orders_${document.getElementById("ordersPrintFrom").value}_${document.getElementById("ordersPrintTo").value}.xlsx`);
+        utils.showToast(i18n.currentLang === "en" ? `Downloaded ${orders.length} orders.` : `تم تنزيل ${orders.length} طلب.`, "success");
+    } catch (error) {
+        utils.showToast(error.message || i18n.t("errorGeneric"), "error");
+    } finally {
+        if (button) button.disabled = false;
+    }
+}
 
 function setupOrdersEventListeners() {
     const searchInput = document.getElementById("orderSearchInput");

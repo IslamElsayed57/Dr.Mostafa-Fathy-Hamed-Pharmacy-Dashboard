@@ -49,6 +49,20 @@ function applyReportCustomDates() {
     generateReports();
 }
 
+function printCurrentReport() {
+    const periodSelect = document.getElementById("reportPeriodSelect");
+    const selectedPeriod = periodSelect?.selectedOptions?.[0]?.textContent?.trim();
+    const start = document.getElementById("reportStartDate")?.value;
+    const end = document.getElementById("reportEndDate")?.value;
+    let label = selectedPeriod || "";
+    if (periodSelect?.value === "custom" && (start || end)) {
+        label = `${start || "…"} – ${end || "…"}`;
+    }
+
+    document.title = `${i18n.t("reportsTitle")} - ${label}`;
+    window.print();
+}
+
 async function generateReports() {
     try {
         const client = db.getClient();

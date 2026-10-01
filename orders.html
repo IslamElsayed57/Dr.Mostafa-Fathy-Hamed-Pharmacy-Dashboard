@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="css/responsive.css">
     <!-- Supabase JS CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -170,6 +171,13 @@
                             <label style="font-size: 0.82rem; font-weight: 600;">إلى:</label>
                             <input type="date" id="customEndDate" class="form-control" style="max-width: 160px;">
                             <button class="btn btn-primary btn-sm" onclick="applyCustomDateFilter()" data-i18n="filterApply">تطبيق</button>
+                        </div>
+                        <div class="filter-bar print-date-controls" style="margin-bottom:1rem;">
+                            <label class="form-label" style="margin:0;" data-i18n="fromDate">من تاريخ</label>
+                            <input type="date" id="ordersPrintFrom" class="form-control" style="max-width:170px;">
+                            <label class="form-label" style="margin:0;" data-i18n="toDate">إلى تاريخ</label>
+                            <input type="date" id="ordersPrintTo" class="form-control" style="max-width:170px;">
+                            <button type="button" class="btn btn-primary btn-sm" id="exportOrdersBtn" onclick="exportOrdersByDateRange()"><i class="fa-solid fa-file-excel"></i> <span data-i18n="exportByDate">تنزيل Excel للفترة</span></button>
                         </div>
 
                         <!-- Orders Table -->

@@ -148,6 +148,10 @@
                         <input type="date" id="reportEndDate" class="form-control" style="max-width: 150px;">
                         <button class="btn btn-primary btn-sm" onclick="applyReportCustomDates()" data-i18n="filterApply">تطبيق</button>
                     </div>
+                    <button type="button" class="btn btn-secondary btn-sm report-print-button" onclick="printCurrentReport()">
+                        <i class="fa-solid fa-print"></i>
+                        <span data-i18n="printReport">طباعة التقرير</span>
+                    </button>
                 </div>
 
                 <!-- KPI Metric Cards -->
@@ -194,7 +198,7 @@
                 </div>
 
                 <!-- Reports Detail Grid -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;" class="order-details-grid">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;" class="order-details-grid report-details-grid">
                     <!-- Top Selling Products -->
                     <div class="content-card">
                         <div class="card-header">
@@ -254,5 +258,38 @@
     <script src="js/utils.js"></script>
     <script src="js/notifications.js"></script>
     <script src="js/reports.js"></script>
+    <style>
+        @media print {
+            @page { margin: 12mm; }
+            html, body { background: #fff !important; color: #111 !important; }
+            body * { visibility: hidden !important; }
+            .app-main, .app-main * { visibility: visible !important; }
+            .app-sidebar, .app-topbar, .sidebar-overlay,
+            .report-print-button, #reportCustomDateWrap button,
+            .toast-container, .notification-panel { display: none !important; }
+            .app-wrapper, .app-main, .page-content {
+                display: block !important;
+                position: static !important;
+                width: 100% !important;
+                max-width: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: visible !important;
+                box-shadow: none !important;
+            }
+            .page-content { visibility: visible !important; }
+            .page-content > * { break-inside: avoid; }
+            .content-card, .stat-card {
+                color: #111 !important;
+                background: #fff !important;
+                border: 1px solid #bbb !important;
+                box-shadow: none !important;
+            }
+            .stats-grid { grid-template-columns: repeat(4, 1fr) !important; }
+            .report-details-grid { grid-template-columns: 1fr 1fr !important; }
+            .table-responsive { overflow: visible !important; }
+            table { width: 100% !important; }
+        }
+    </style>
 </body>
 </html>

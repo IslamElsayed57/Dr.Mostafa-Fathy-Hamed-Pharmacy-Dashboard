@@ -155,6 +155,10 @@ const TRANSLATIONS = {
         filterType: "النوع",
         filterBranch: "الفرع",
         filterApply: "تطبيق التصفية",
+        fromDate: "من تاريخ",
+        toDate: "إلى تاريخ",
+        exportByDate: "تنزيل Excel للفترة",
+        printReport: "طباعة التقرير",
         filterReset: "إعادة ضبط",
         
         // Common Buttons & Modals
@@ -423,6 +427,10 @@ const TRANSLATIONS = {
         filterType: "Type",
         filterBranch: "Branch",
         filterApply: "Apply Filters",
+        fromDate: "From",
+        toDate: "To",
+        exportByDate: "Download Excel for date range",
+        printReport: "Print report",
         filterReset: "Reset",
         
         // Common Buttons & Modals

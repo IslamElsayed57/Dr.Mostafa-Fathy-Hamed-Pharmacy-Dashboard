@@ -19,6 +19,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     notifications.init();
     setupConsultationListeners();
+    initializeConsultationPrintDates();
     await loadConsultations();
 
     window.onNewRealtimeConsultation = () => loadConsultations();
@@ -36,6 +37,58 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     };
 });
+
+function initializeConsultationPrintDates() {
+    const today = new Date();
+    const from = document.getElementById("consultationsPrintFrom");
+    const to = document.getElementById("consultationsPrintTo");
+    if (from) from.value = `${today.getFullYear()}-01-01`;
+    if (to) to.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+}
+
+async function exportConsultationsByDateRange() {
+    const button = document.getElementById("exportConsultationsBtn");
+    try {
+        if (typeof XLSX === "undefined") throw new Error(i18n.currentLang === "en" ? "Excel export is unavailable. Reload the page and try again." : "ميزة Excel غير متاحة الآن. أعد تحميل الصفحة وحاول مرة أخرى.");
+        const fromValue = document.getElementById("consultationsPrintFrom")?.value;
+        const toValue = document.getElementById("consultationsPrintTo")?.value;
+        if (!fromValue || !toValue || fromValue > toValue) {
+            throw new Error(i18n.currentLang === "en" ? "Choose a valid start and end date." : "اختر تاريخ بداية ونهاية صحيحين.");
+        }
+        const [fy, fm, fd] = fromValue.split("-").map(Number);
+        const [ty, tm, td] = toValue.split("-").map(Number);
+        const from = new Date(fy, fm - 1, fd).toISOString();
+        const toExclusive = new Date(ty, tm - 1, td + 1).toISOString();
+        if (button) button.disabled = true;
+
+        const consultations = [];
+        for (let offset = 0; ; offset += 500) {
+            const { data, error } = await db.getClient().from("consultations")
+                .select("id, patient_name, phone, consultation_type, contact_method, status, created_at, preferred_time, details, outcome, outcome_notes, branch_id, followed_up_by, followed_up_at, updated_at, branches(name_ar, name_en)")
+                .gte("created_at", from).lt("created_at", toExclusive)
+                .order("created_at", { ascending: false }).range(offset, offset + 499);
+            if (error) throw error;
+            const batch = data || [];
+            consultations.push(...batch);
+            if (batch.length < 500) break;
+        }
+
+        const headers = i18n.currentLang === "en"
+            ? ["ID", "Consultant", "Phone", "Consultation type", "Contact method", "Status", "Branch", "Preferred time", "Details", "Outcome", "Outcome notes", "Followed up by", "Followed up at", "Created at", "Updated at"]
+            : ["المعرف", "المستشير", "الهاتف", "نوع الاستشارة", "وسيلة التواصل", "الحالة", "الفرع", "الوقت المفضل", "التفاصيل", "النتيجة", "ملاحظات النتيجة", "تمت المتابعة بواسطة", "وقت المتابعة", "تاريخ الإنشاء", "آخر تحديث"];
+        const rows = consultations.map(consult => [consult.id, consult.patient_name || "", consult.phone || "", utils.translateConsultType(consult.consultation_type), consult.contact_method || "", consult.status || "", i18n.currentLang === "en" ? (consult.branches?.name_en || consult.branches?.name_ar || "") : (consult.branches?.name_ar || ""), consult.preferred_time || "", consult.details || "", consult.outcome || "", consult.outcome_notes || "", consult.followed_up_by || "", consult.followed_up_at || "", consult.created_at || "", consult.updated_at || ""]);
+        const workbook = XLSX.utils.book_new();
+        const sheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+        sheet["!cols"] = headers.map((_, index) => ({ wch: index >= 7 && index <= 10 ? 32 : 20 }));
+        XLSX.utils.book_append_sheet(workbook, sheet, i18n.currentLang === "en" ? "Consultations" : "الاستشارات");
+        XLSX.writeFile(workbook, `pharmacy-consultations_${fromValue}_${toValue}.xlsx`);
+        utils.showToast(i18n.currentLang === "en" ? `Downloaded ${consultations.length} consultations.` : `تم تنزيل ${consultations.length} استشارة.`, "success");
+    } catch (error) {
+        utils.showToast(error.message || i18n.t("errorGeneric"), "error");
+    } finally {
+        if (button) button.disabled = false;
+    }
+}
 
 function setupConsultationListeners() {
     const searchInput = document.getElementById("consultationSearchInput");
