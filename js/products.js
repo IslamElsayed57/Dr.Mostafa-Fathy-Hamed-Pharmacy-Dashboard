@@ -12,6 +12,7 @@ let displayedProducts = [];
 let productFilterState = {
     searchQuery: "",
     categoryId: "all",
+    onlyDiscounts: false,
     page: 1,
     pageSize: 50,
     totalCount: 0
@@ -65,6 +66,32 @@ function setupCategoryFilter() {
         productFilterState.page = 1;
         loadProducts();
     });
+}
+
+function toggleDashboardDiscountFilter() {
+    productFilterState.onlyDiscounts = !productFilterState.onlyDiscounts;
+    productFilterState.page = 1;
+
+    const btn = document.getElementById("btnDashboardDiscountFilter");
+    if (btn) {
+        if (productFilterState.onlyDiscounts) {
+            btn.className = "btn btn-primary btn-sm";
+            btn.style.background = "#DC2626";
+            btn.style.borderColor = "#DC2626";
+            btn.style.color = "#FFFFFF";
+            const icon = btn.querySelector("i");
+            if (icon) icon.style.color = "#FFFFFF";
+        } else {
+            btn.className = "btn btn-outline btn-sm";
+            btn.style.background = "";
+            btn.style.borderColor = "";
+            btn.style.color = "";
+            const icon = btn.querySelector("i");
+            if (icon) icon.style.color = "#DC2626";
+        }
+    }
+
+    loadProducts();
 }
 
 function populateCategoryFilter() {
@@ -169,6 +196,11 @@ async function loadProducts() {
             if (sq) {
                 query = query.or(`name_ar.ilike.%${sq}%,name_en.ilike.%${sq}%`);
             }
+        }
+
+        // Discount Filter
+        if (productFilterState.onlyDiscounts) {
+            query = query.not("old_price", "is", null).gt("old_price", 0);
         }
 
         // Ordering & Pagination

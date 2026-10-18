@@ -156,6 +156,10 @@
                                 <option value="all" data-i18n="allCategories">جميع الأقسام</option>
                             </select>
 
+                            <button type="button" class="btn btn-outline btn-sm" id="btnDashboardDiscountFilter" onclick="toggleDashboardDiscountFilter()" title="عرض المنتجات التي عليها خصومات فقط" style="display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap;">
+                                <i class="fa-solid fa-percent" style="color: #DC2626;"></i> <span>الخصومات فقط</span>
+                            </button>
+
                             <input type="file" id="productExcelFile" accept=".xlsx,.xls" style="display: none;" onchange="handleProductExcelImport(this.files[0])">
 
                             <button class="btn btn-outline btn-sm admin-only" style="display:none" onclick="document.getElementById('productExcelFile').click()" title="تحميل/رفع المنتجات من ملف إكسل">
