@@ -11,8 +11,12 @@ let displayedProducts = [];
 
 let productFilterState = {
     searchQuery: "",
-    categoryId: "all"
+    categoryId: "all",
+    page: 1,
+    pageSize: 50,
+    totalCount: 0
 };
+let searchDebounceTimer = null;
 
 document.addEventListener("DOMContentLoaded", async () => {
     utils.setupMobileSidebar();
@@ -27,23 +31,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     setupCategoryFilter();
 
     window.onLanguageChange = () => {
-        applyProductFilters();
         loadCategoriesDropdown();
+        loadProducts();
     };
 });
 
 function applyProductFilters() {
-    const q = productFilterState.searchQuery.toLowerCase();
-    const catId = productFilterState.categoryId;
-    const filtered = productsList.filter(p => {
-        const matchesSearch =
-            !q ||
-            (p.name_ar && p.name_ar.toLowerCase().includes(q)) ||
-            (p.name_en && p.name_en.toLowerCase().includes(q));
-        const matchesCategory = catId === "all" || p.category_id === catId;
-        return matchesSearch && matchesCategory;
-    });
-    renderProductsTable(filtered);
+    productFilterState.page = 1;
+    loadProducts();
 }
 
 function setupProductSearch() {
@@ -51,8 +46,13 @@ function setupProductSearch() {
     if (!input) return;
 
     input.addEventListener("input", (e) => {
-        productFilterState.searchQuery = e.target.value.trim().toLowerCase();
-        applyProductFilters();
+        clearTimeout(searchDebounceTimer);
+        const val = e.target.value.trim();
+        searchDebounceTimer = setTimeout(() => {
+            productFilterState.searchQuery = val;
+            productFilterState.page = 1;
+            loadProducts();
+        }, 300);
     });
 }
 
@@ -62,7 +62,8 @@ function setupCategoryFilter() {
 
     select.addEventListener("change", (e) => {
         productFilterState.categoryId = e.target.value;
-        applyProductFilters();
+        productFilterState.page = 1;
+        loadProducts();
     });
 }
 
@@ -145,25 +146,50 @@ async function loadSubcategoriesDropdown(categoryId, selectedSubcategoryId = "")
 async function loadProducts() {
     const tbody = document.getElementById("productsTableBody");
     const emptyState = document.getElementById("emptyProductsState");
+    const countBadge = document.getElementById("productsCountBadge");
+    const paginationEl = document.getElementById("productsPagination");
     if (!tbody) return;
 
     tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 3rem;">${i18n.t("loadingData")}</td></tr>`;
 
     try {
         const client = db.getClient();
-        const { data, error } = await client
+        let query = client
             .from("products")
-            .select("*, categories(name_ar, name_en)")
-            .order("created_at", { ascending: false });
+            .select("*, categories(name_ar, name_en)", { count: "exact" });
 
+        // Category Filter
+        if (productFilterState.categoryId && productFilterState.categoryId !== "all") {
+            query = query.eq("category_id", productFilterState.categoryId);
+        }
+
+        // Search Filter (Arabic or English product name)
+        if (productFilterState.searchQuery) {
+            const sq = productFilterState.searchQuery.replace(/[,()]/g, " ").trim();
+            if (sq) {
+                query = query.or(`name_ar.ilike.%${sq}%,name_en.ilike.%${sq}%`);
+            }
+        }
+
+        // Ordering & Pagination
+        const from = (productFilterState.page - 1) * productFilterState.pageSize;
+        const to = from + productFilterState.pageSize - 1;
+
+        query = query.order("created_at", { ascending: false }).range(from, to);
+
+        const { data, error, count } = await query;
         if (error) throw error;
 
         productsList = data || [];
-        applyProductFilters();
+        productFilterState.totalCount = count != null ? count : productsList.length;
+
+        renderProductsTable(productsList);
+        renderProductPaginationControls();
 
     } catch (err) {
         console.error("Load products error:", err);
         tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #EF4444; padding: 2rem;">${i18n.t("errorGeneric")}</td></tr>`;
+        if (paginationEl) paginationEl.innerHTML = "";
     }
 }
 
@@ -180,7 +206,13 @@ function renderProductsTable(items = productsList) {
     const visibleIds = new Set(items.map(p => p.id));
     selectedProductIds.forEach(id => { if (!visibleIds.has(id)) selectedProductIds.delete(id); });
 
-    if (countBadge) countBadge.textContent = `${items.length} ${i18n.t("navProducts")}`;
+    if (countBadge) {
+        const total = productFilterState.totalCount || items.length;
+        const isAr = i18n.currentLang === "ar";
+        countBadge.textContent = isAr 
+            ? `${total.toLocaleString()} صنف` 
+            : `${total.toLocaleString()} Products`;
+    }
 
     if (items.length === 0) {
         tbody.innerHTML = "";
@@ -243,6 +275,148 @@ function renderProductsTable(items = productsList) {
     }).join("");
 
     updateBulkBar();
+}
+
+function renderProductPaginationControls() {
+    const container = document.getElementById("productsPagination");
+    if (!container) return;
+
+    const total = productFilterState.totalCount;
+    const pageSize = productFilterState.pageSize;
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    const currentPage = Math.min(Math.max(1, productFilterState.page), totalPages);
+    productFilterState.page = currentPage;
+
+    if (total === 0) {
+        container.innerHTML = "";
+        return;
+    }
+
+    const isAr = i18n.currentLang === "ar";
+    const startItem = (currentPage - 1) * pageSize + 1;
+    const endItem = Math.min(currentPage * pageSize, total);
+
+    // Calculate smart page range to display
+    const pages = [];
+    if (totalPages <= 7) {
+        for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+        pages.push(1);
+        let leftBound = Math.max(2, currentPage - 2);
+        let rightBound = Math.min(totalPages - 1, currentPage + 2);
+
+        if (currentPage <= 4) {
+            leftBound = 2;
+            rightBound = 5;
+        } else if (currentPage >= totalPages - 3) {
+            leftBound = totalPages - 4;
+            rightBound = totalPages - 1;
+        }
+
+        if (leftBound > 2) pages.push("...");
+        for (let i = leftBound; i <= rightBound; i++) pages.push(i);
+        if (rightBound < totalPages - 1) pages.push("...");
+        pages.push(totalPages);
+    }
+
+    const prevIcon = isAr ? '<i class="fa-solid fa-chevron-right"></i>' : '<i class="fa-solid fa-chevron-left"></i>';
+    const nextIcon = isAr ? '<i class="fa-solid fa-chevron-left"></i>' : '<i class="fa-solid fa-chevron-right"></i>';
+    const firstIcon = isAr ? '<i class="fa-solid fa-angles-right"></i>' : '<i class="fa-solid fa-angles-left"></i>';
+    const lastIcon = isAr ? '<i class="fa-solid fa-angles-left"></i>' : '<i class="fa-solid fa-angles-right"></i>';
+
+    const pageButtonsHtml = pages.map(p => {
+        if (p === "...") {
+            return `<span style="padding: 0.35rem 0.5rem; color: var(--text-muted); font-weight: 600;">...</span>`;
+        }
+        const isActive = p === currentPage;
+        return `
+            <button type="button" class="btn ${isActive ? 'btn-primary' : 'btn-outline'} btn-sm" 
+                    style="min-width: 36px; padding: 0.35rem 0.6rem; font-weight: ${isActive ? '700' : '500'};"
+                    onclick="changeProductsPage(${p})" 
+                    ${isActive ? 'aria-current="page"' : ''}>
+                ${p}
+            </button>
+        `;
+    }).join("");
+
+    container.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding-top: 1.25rem; border-top: 1px solid var(--border-color);">
+            <!-- Summary & Page Size -->
+            <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                <span style="font-size: 0.85rem; color: var(--text-muted);">
+                    ${isAr 
+                        ? `عرض <strong>${startItem.toLocaleString()}</strong> - <strong>${endItem.toLocaleString()}</strong> من أصل <strong>${total.toLocaleString()}</strong> صنف (صفحة <strong>${currentPage}</strong> من <strong>${totalPages}</strong>)`
+                        : `Showing <strong>${startItem.toLocaleString()}</strong> - <strong>${endItem.toLocaleString()}</strong> of <strong>${total.toLocaleString()}</strong> items (Page <strong>${currentPage}</strong> of <strong>${totalPages}</strong>)`}
+                </span>
+
+                <div style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; color: var(--text-muted);">
+                    <span>${isAr ? "لكل صفحة:" : "Per page:"}</span>
+                    <select class="form-control" style="width: auto; padding: 0.25rem 0.6rem; font-size: 0.8rem; height: auto;" onchange="changeProductPageSize(this.value)">
+                        <option value="25" ${pageSize === 25 ? "selected" : ""}>25</option>
+                        <option value="50" ${pageSize === 50 ? "selected" : ""}>50</option>
+                        <option value="100" ${pageSize === 100 ? "selected" : ""}>100</option>
+                        <option value="200" ${pageSize === 200 ? "selected" : ""}>200</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Page Navigation -->
+            <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+                <button type="button" class="btn btn-secondary btn-sm" ${currentPage <= 1 ? "disabled" : ""} onclick="changeProductsPage(1)" title="${isAr ? 'الصفحة الأولى' : 'First page'}">
+                    ${firstIcon}
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" ${currentPage <= 1 ? "disabled" : ""} onclick="changeProductsPage(${currentPage - 1})" title="${isAr ? 'الصفحة السابقة' : 'Previous page'}">
+                    ${prevIcon}
+                </button>
+
+                ${pageButtonsHtml}
+
+                <button type="button" class="btn btn-secondary btn-sm" ${currentPage >= totalPages ? "disabled" : ""} onclick="changeProductsPage(${currentPage + 1})" title="${isAr ? 'الصفحة التالية' : 'Next page'}">
+                    ${nextIcon}
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" ${currentPage >= totalPages ? "disabled" : ""} onclick="changeProductsPage(${totalPages})" title="${isAr ? 'الصفحة الأخيرة' : 'Last page'}">
+                    ${lastIcon}
+                </button>
+
+                <!-- Direct Jump -->
+                <div style="display: inline-flex; align-items: center; gap: 0.3rem; margin-inline-start: 0.5rem;">
+                    <input type="number" min="1" max="${totalPages}" id="directPageInput" 
+                           placeholder="${currentPage}" 
+                           style="width: 60px; padding: 0.25rem 0.4rem; font-size: 0.8rem; text-align: center; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-main);"
+                           onkeydown="if(event.key==='Enter') goToDirectPage(${totalPages})">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="goToDirectPage(${totalPages})" title="${isAr ? 'انتقال' : 'Go'}">
+                        ${isAr ? "انتقال" : "Go"}
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function changeProductsPage(newPage) {
+    const totalPages = Math.max(1, Math.ceil(productFilterState.totalCount / productFilterState.pageSize));
+    if (newPage < 1 || newPage > totalPages) return;
+    productFilterState.page = newPage;
+    loadProducts();
+    const card = document.querySelector(".content-card");
+    if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function changeProductPageSize(newSize) {
+    productFilterState.pageSize = parseInt(newSize, 10) || 50;
+    productFilterState.page = 1;
+    loadProducts();
+}
+
+function goToDirectPage(totalPages) {
+    const input = document.getElementById("directPageInput");
+    if (!input) return;
+    const val = parseInt(input.value, 10);
+    if (!isNaN(val) && val >= 1 && val <= totalPages) {
+        changeProductsPage(val);
+    } else {
+        utils.showToast(i18n.currentLang === "ar" ? `يرجى إدخال رقم صفحة بين 1 و ${totalPages}` : `Please enter a page between 1 and ${totalPages}`, "warning");
+    }
 }
 
 // ==========================================================================
@@ -409,8 +583,16 @@ function openAddProductModal() {
     document.getElementById("productModal").classList.add("active");
 }
 
-function openEditProductModal(productId) {
-    const p = productsList.find(item => item.id === productId);
+async function openEditProductModal(productId) {
+    let p = productsList.find(item => item.id === productId);
+    if (!p) {
+        try {
+            const { data } = await db.getClient().from("products").select("*").eq("id", productId).single();
+            p = data;
+        } catch (e) {
+            console.error("Error finding product for edit:", e);
+        }
+    }
     if (!p) return;
 
     document.getElementById("productIdInput").value = p.id;
