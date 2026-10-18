@@ -175,7 +175,10 @@ async function loadProducts() {
         const from = (productFilterState.page - 1) * productFilterState.pageSize;
         const to = from + productFilterState.pageSize - 1;
 
-        query = query.order("created_at", { ascending: false }).range(from, to);
+        query = query
+            .order("created_at", { ascending: false })
+            .order("id", { ascending: true })
+            .range(from, to);
 
         const { data, error, count } = await query;
         if (error) throw error;
