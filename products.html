@@ -261,7 +261,29 @@
 
                     <div class="form-group">
                         <label class="form-label" data-i18n="productImage">صورة المنتج</label>
-                        <input type="file" id="productImageFile" class="form-control" accept="image/*">
+                        <div class="product-image-container" style="display: flex; flex-direction: column; gap: 0.6rem;">
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <input type="file" id="productImageFile" class="form-control" accept="image/*">
+                                <button type="button" class="btn btn-icon btn-sm" id="btnClearSelectedImage" onclick="clearSelectedProductImage()" style="display: none; color: #DC2626; border-color: #EF4444; flex-shrink: 0;" title="إلغاء اختيار الصورة" data-i18n-title="removeSelectedImage">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+
+                            <!-- Preview & Permanent Delete Box -->
+                            <div id="productImagePreviewWrap" style="display: none; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.6rem 0.85rem; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-hover);">
+                                <div style="display: flex; align-items: center; gap: 0.75rem; overflow: hidden; min-width: 0;">
+                                    <img id="productImagePreview" src="" alt="Product Preview" style="width: 50px; height: 50px; object-fit: contain; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: #ffffff; flex-shrink: 0;">
+                                    <div style="display: flex; flex-direction: column; gap: 0.15rem; min-width: 0;">
+                                        <span id="productImageStatusText" style="font-size: 0.82rem; font-weight: 600; color: var(--text-main);" data-i18n="currentImage">الصورة الحالية للمنتج</span>
+                                        <span id="productImageFileName" style="font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px;"></span>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-danger btn-sm" id="btnDeleteProductImage" onclick="handleDeleteProductImageClick()" style="display: inline-flex; align-items: center; gap: 0.45rem; flex-shrink: 0; white-space: nowrap;" title="حذف الصورة نهائياً" data-i18n-title="deleteImage">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                    <span id="btnDeleteProductImageText" data-i18n="deleteImage">حذف الصورة نهائياً</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-group" style="flex-direction: row; align-items: center; gap: 0.5rem;">

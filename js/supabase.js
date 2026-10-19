@@ -84,6 +84,49 @@ class SupabaseService {
             return null;
         }
     }
+
+    /**
+     * Permanently deletes an image file from product-images storage bucket
+     * @param {string} imageUrlOrPath - The public URL or file path of the product image
+     * @returns {Promise<boolean>}
+     */
+    async deleteProductImage(imageUrlOrPath) {
+        if (!imageUrlOrPath) return false;
+
+        try {
+            const bucket = CONFIG.STORAGE_BUCKETS.PRODUCT_IMAGES;
+            let filePath = imageUrlOrPath;
+
+            // Extract file path inside bucket if a full URL was passed
+            const marker = `/${bucket}/`;
+            if (filePath.includes(marker)) {
+                filePath = filePath.split(marker).pop();
+            } else if (filePath.startsWith("http://") || filePath.startsWith("https://")) {
+                filePath = filePath.split("/").pop();
+            }
+
+            // Remove any query params or URL encoding
+            filePath = filePath.split("?")[0];
+            filePath = decodeURIComponent(filePath);
+
+            if (!filePath) return false;
+
+            const { error } = await this.client
+                .storage
+                .from(bucket)
+                .remove([filePath]);
+
+            if (error) {
+                console.error("Supabase storage image remove error:", error);
+                return false;
+            }
+
+            return true;
+        } catch (err) {
+            console.error("Unexpected product image delete error:", err);
+            return false;
+        }
+    }
 }
 
 // Global Singleton

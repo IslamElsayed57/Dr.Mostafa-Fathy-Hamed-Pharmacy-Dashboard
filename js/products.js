@@ -19,6 +19,10 @@ let productFilterState = {
 };
 let searchDebounceTimer = null;
 
+// Product Image State for Modal
+let currentProductImageUrl = null;
+let isImageMarkedForDeletion = false;
+
 document.addEventListener("DOMContentLoaded", async () => {
     utils.setupMobileSidebar();
 
@@ -30,10 +34,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     await loadProducts();
     setupProductSearch();
     setupCategoryFilter();
+    setupProductImageInput();
 
     window.onLanguageChange = () => {
         loadCategoriesDropdown();
         loadProducts();
+        updateProductModalImageLabels();
     };
 });
 
@@ -535,6 +541,25 @@ async function runBulkProductOperation(ids, operation) {
     for (let i = 0; i < ids.length; i += CHUNK) {
         const chunk = ids.slice(i, i + CHUNK);
 
+        if (operation === "delete") {
+            try {
+                const { data: prodsWithImages } = await client
+                    .from("products")
+                    .select("image_url")
+                    .in("id", chunk)
+                    .not("image_url", "is", null);
+                if (prodsWithImages && prodsWithImages.length > 0) {
+                    for (const item of prodsWithImages) {
+                        if (item.image_url) {
+                            await db.deleteProductImage(item.image_url);
+                        }
+                    }
+                }
+            } catch (storageErr) {
+                console.warn("Bulk product delete image cleanup error:", storageErr);
+            }
+        }
+
         const request = operation === "delete"
             ? client.from("products").delete()
             : client.from("products").update({
@@ -615,6 +640,12 @@ function openAddProductModal() {
     document.getElementById("productIdInput").value = "";
     document.getElementById("productSubcategorySelect").innerHTML = `<option value="">-- بدون فئة فرعية --</option>`;
     document.getElementById("productModalTitle").textContent = i18n.t("addProduct");
+
+    currentProductImageUrl = null;
+    isImageMarkedForDeletion = false;
+    clearSelectedProductImage();
+    hideProductImagePreview();
+
     document.getElementById("productModal").classList.add("active");
 }
 
@@ -639,6 +670,18 @@ async function openEditProductModal(productId) {
     document.getElementById("productBadgeInput").value = p.badge || "";
     document.getElementById("productInStockInput").checked = p.in_stock !== false;
 
+    // Reset file input & prepare image state
+    currentProductImageUrl = p.image_url || null;
+    isImageMarkedForDeletion = false;
+    const fileInput = document.getElementById("productImageFile");
+    if (fileInput) fileInput.value = "";
+
+    if (currentProductImageUrl) {
+        showCurrentProductImagePreview(currentProductImageUrl);
+    } else {
+        hideProductImagePreview();
+    }
+
     loadSubcategoriesDropdown(p.category_id || "", p.subcategory_id || "");
 
     document.getElementById("productModalTitle").textContent = i18n.t("editProduct");
@@ -647,6 +690,213 @@ async function openEditProductModal(productId) {
 
 function closeProductModal() {
     document.getElementById("productModal").classList.remove("active");
+    clearSelectedProductImage();
+    hideProductImagePreview();
+    currentProductImageUrl = null;
+    isImageMarkedForDeletion = false;
+}
+
+function setupProductImageInput() {
+    const fileInput = document.getElementById("productImageFile");
+    if (fileInput) {
+        fileInput.addEventListener("change", handleProductImageFileChange);
+    }
+}
+
+function handleProductImageFileChange(e) {
+    const file = e.target.files && e.target.files[0];
+    const previewWrap = document.getElementById("productImagePreviewWrap");
+    const previewImg = document.getElementById("productImagePreview");
+    const statusText = document.getElementById("productImageStatusText");
+    const fileNameEl = document.getElementById("productImageFileName");
+    const clearBtn = document.getElementById("btnClearSelectedImage");
+    const deleteBtn = document.getElementById("btnDeleteProductImage");
+    const deleteBtnText = document.getElementById("btnDeleteProductImageText");
+
+    if (!file) {
+        if (currentProductImageUrl && !isImageMarkedForDeletion) {
+            showCurrentProductImagePreview(currentProductImageUrl);
+        } else {
+            hideProductImagePreview();
+        }
+        return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+        utils.showToast(i18n.currentLang === "ar" ? "يرجى اختيار ملف صورة صالح" : "Please select a valid image file", "error");
+        e.target.value = "";
+        return;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    if (previewImg) previewImg.src = objectUrl;
+    if (statusText) {
+        statusText.textContent = i18n.t("newImageSelected");
+        statusText.setAttribute("data-i18n", "newImageSelected");
+    }
+    if (fileNameEl) {
+        fileNameEl.textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+    }
+    if (previewWrap) previewWrap.style.display = "flex";
+    if (clearBtn) clearBtn.style.display = "inline-flex";
+    if (deleteBtn) {
+        deleteBtn.style.display = "inline-flex";
+        deleteBtn.setAttribute("title", i18n.t("removeSelectedImage"));
+        deleteBtn.setAttribute("data-i18n-title", "removeSelectedImage");
+    }
+    if (deleteBtnText) {
+        deleteBtnText.textContent = i18n.t("removeSelectedImage");
+        deleteBtnText.setAttribute("data-i18n", "removeSelectedImage");
+    }
+}
+
+function showCurrentProductImagePreview(url) {
+    const previewWrap = document.getElementById("productImagePreviewWrap");
+    const previewImg = document.getElementById("productImagePreview");
+    const statusText = document.getElementById("productImageStatusText");
+    const fileNameEl = document.getElementById("productImageFileName");
+    const clearBtn = document.getElementById("btnClearSelectedImage");
+    const deleteBtn = document.getElementById("btnDeleteProductImage");
+    const deleteBtnText = document.getElementById("btnDeleteProductImageText");
+
+    if (!url) {
+        hideProductImagePreview();
+        return;
+    }
+
+    if (previewImg) previewImg.src = url;
+    if (statusText) {
+        statusText.textContent = i18n.t("currentImage");
+        statusText.setAttribute("data-i18n", "currentImage");
+    }
+    if (fileNameEl) {
+        const cleanName = url.split("/").pop().split("?")[0];
+        fileNameEl.textContent = decodeURIComponent(cleanName);
+    }
+    if (previewWrap) previewWrap.style.display = "flex";
+    if (clearBtn) clearBtn.style.display = "none";
+    if (deleteBtn) {
+        deleteBtn.style.display = "inline-flex";
+        deleteBtn.setAttribute("title", i18n.t("deleteImage"));
+        deleteBtn.setAttribute("data-i18n-title", "deleteImage");
+    }
+    if (deleteBtnText) {
+        deleteBtnText.textContent = i18n.t("deleteImage");
+        deleteBtnText.setAttribute("data-i18n", "deleteImage");
+    }
+}
+
+function hideProductImagePreview() {
+    const previewWrap = document.getElementById("productImagePreviewWrap");
+    const previewImg = document.getElementById("productImagePreview");
+    const fileNameEl = document.getElementById("productImageFileName");
+    const clearBtn = document.getElementById("btnClearSelectedImage");
+
+    if (previewImg) previewImg.src = "";
+    if (fileNameEl) fileNameEl.textContent = "";
+    if (previewWrap) previewWrap.style.display = "none";
+    if (clearBtn) clearBtn.style.display = "none";
+}
+
+function clearSelectedProductImage() {
+    const fileInput = document.getElementById("productImageFile");
+    if (fileInput) fileInput.value = "";
+
+    if (currentProductImageUrl && !isImageMarkedForDeletion) {
+        showCurrentProductImagePreview(currentProductImageUrl);
+    } else {
+        hideProductImagePreview();
+    }
+}
+
+async function handleDeleteProductImageClick() {
+    const fileInput = document.getElementById("productImageFile");
+    const hasNewFile = fileInput && fileInput.files && fileInput.files.length > 0;
+
+    // If user currently selected a new file from their device, clear that local selection
+    if (hasNewFile) {
+        clearSelectedProductImage();
+        return;
+    }
+
+    // Deleting an existing saved image permanently from Supabase & website
+    if (!currentProductImageUrl) return;
+
+    const productId = document.getElementById("productIdInput").value;
+    const confirmMsg = i18n.t("deleteImageConfirm");
+
+    utils.showConfirm(i18n.t("deleteImage"), confirmMsg, async () => {
+        const deleteBtn = document.getElementById("btnDeleteProductImage");
+        const deleteBtnText = document.getElementById("btnDeleteProductImageText");
+        const originalText = deleteBtnText ? deleteBtnText.textContent : "";
+
+        if (deleteBtn) deleteBtn.disabled = true;
+        if (deleteBtnText) deleteBtnText.textContent = i18n.t("deletingImage");
+
+        try {
+            const imgToDelete = currentProductImageUrl;
+
+            // 1. Permanently delete from Supabase storage bucket
+            await db.deleteProductImage(imgToDelete);
+
+            // 2. If product exists in database, clear its image_url
+            if (productId) {
+                const { error } = await db.getClient()
+                    .from("products")
+                    .update({
+                        image_url: null,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq("id", productId);
+
+                if (error) throw error;
+
+                // Update product in-memory cache
+                const prod = productsList.find(item => item.id === productId);
+                if (prod) {
+                    prod.image_url = null;
+                }
+                renderProductsTable();
+            }
+
+            // 3. Reset image state in modal
+            currentProductImageUrl = null;
+            isImageMarkedForDeletion = true;
+            if (fileInput) fileInput.value = "";
+            hideProductImagePreview();
+
+            utils.showToast(i18n.t("imageDeletedSuccess"), "success");
+        } catch (err) {
+            console.error("Failed to delete product image:", err);
+            utils.showToast(i18n.t("errorGeneric"), "error");
+        } finally {
+            if (deleteBtn) deleteBtn.disabled = false;
+            if (deleteBtnText) deleteBtnText.textContent = originalText || i18n.t("deleteImage");
+        }
+    });
+}
+
+function updateProductModalImageLabels() {
+    const fileInput = document.getElementById("productImageFile");
+    const hasNewFile = fileInput && fileInput.files && fileInput.files.length > 0;
+    const deleteBtn = document.getElementById("btnDeleteProductImage");
+    const deleteBtnText = document.getElementById("btnDeleteProductImageText");
+    const clearBtn = document.getElementById("btnClearSelectedImage");
+    const statusText = document.getElementById("productImageStatusText");
+
+    if (clearBtn) {
+        clearBtn.setAttribute("title", i18n.t("removeSelectedImage"));
+    }
+
+    if (hasNewFile) {
+        if (statusText) statusText.textContent = i18n.t("newImageSelected");
+        if (deleteBtn) deleteBtn.setAttribute("title", i18n.t("removeSelectedImage"));
+        if (deleteBtnText) deleteBtnText.textContent = i18n.t("removeSelectedImage");
+    } else if (currentProductImageUrl && !isImageMarkedForDeletion) {
+        if (statusText) statusText.textContent = i18n.t("currentImage");
+        if (deleteBtn) deleteBtn.setAttribute("title", i18n.t("deleteImage"));
+        if (deleteBtnText) deleteBtnText.textContent = i18n.t("deleteImage");
+    }
 }
 
 async function handleProductFormSubmit(e) {
@@ -673,8 +923,14 @@ async function handleProductFormSubmit(e) {
 
     try {
         let imageUrl = null;
+        const oldImageUrl = currentProductImageUrl;
+
         if (fileInput && fileInput.files && fileInput.files[0]) {
             imageUrl = await db.uploadProductImage(fileInput.files[0]);
+            // If replacing an existing image with a newly uploaded one, clean up the old file from Supabase storage
+            if (oldImageUrl && oldImageUrl !== imageUrl) {
+                await db.deleteProductImage(oldImageUrl);
+            }
         }
 
         const payload = {
@@ -691,6 +947,8 @@ async function handleProductFormSubmit(e) {
 
         if (imageUrl) {
             payload.image_url = imageUrl;
+        } else if (isImageMarkedForDeletion) {
+            payload.image_url = null;
         }
 
         const client = db.getClient();
@@ -709,8 +967,6 @@ async function handleProductFormSubmit(e) {
 
     } catch (err) {
         console.error("Save product error:", err);
-        // Surface the real database message — "حدث خطأ غير متوقع" alone
-        // hides things like a missing column (42703) or a blocked insert (42501).
         const detail = err && err.message ? err.message : "";
         utils.showToast(
             detail ? `${i18n.t("errorGeneric")} — ${detail}` : i18n.t("errorGeneric"),
