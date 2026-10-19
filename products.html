@@ -232,11 +232,11 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div class="form-group">
                             <label class="form-label" data-i18n="productPrice">السعر (ج.م) *</label>
-                            <input type="number" step="0.5" id="productPriceInput" class="form-control" required placeholder="45.00">
+                            <input type="number" step="0.01" min="0" id="productPriceInput" class="form-control" required placeholder="45.00">
                         </div>
                         <div class="form-group">
                             <label class="form-label" data-i18n="productOldPrice">السعر قبل الخصم</label>
-                            <input type="number" step="0.5" id="productOldPriceInput" class="form-control" placeholder="50.00">
+                            <input type="number" step="0.01" min="0" id="productOldPriceInput" class="form-control" placeholder="50.00">
                         </div>
                     </div>
 

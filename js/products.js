@@ -35,6 +35,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     setupProductSearch();
     setupCategoryFilter();
     setupProductImageInput();
+    setupPriceInputsValidation();
 
     window.onLanguageChange = () => {
         loadCategoriesDropdown();
@@ -703,6 +704,25 @@ function setupProductImageInput() {
     }
 }
 
+function setupPriceInputsValidation() {
+    const priceInputs = [
+        document.getElementById("productPriceInput"),
+        document.getElementById("productOldPriceInput")
+    ];
+
+    priceInputs.forEach(input => {
+        if (!input) return;
+        input.addEventListener("input", function() {
+            if (this.value && this.value.includes(".")) {
+                const parts = this.value.split(".");
+                if (parts[1] && parts[1].length > 2) {
+                    this.value = `${parts[0]}.${parts[1].slice(0, 2)}`;
+                }
+            }
+        });
+    });
+}
+
 function handleProductImageFileChange(e) {
     const file = e.target.files && e.target.files[0];
     const previewWrap = document.getElementById("productImagePreviewWrap");
@@ -904,8 +924,10 @@ async function handleProductFormSubmit(e) {
     const id = document.getElementById("productIdInput").value;
     const nameAr = document.getElementById("productNameArInput").value.trim();
     const nameEn = document.getElementById("productNameEnInput").value.trim();
-    const price = parseFloat(document.getElementById("productPriceInput").value);
-    const oldPrice = parseFloat(document.getElementById("productOldPriceInput").value) || null;
+    const priceVal = parseFloat(document.getElementById("productPriceInput").value);
+    const price = isNaN(priceVal) ? NaN : parseFloat(priceVal.toFixed(2));
+    const oldPriceRaw = document.getElementById("productOldPriceInput").value;
+    const oldPrice = oldPriceRaw && !isNaN(parseFloat(oldPriceRaw)) ? parseFloat(parseFloat(oldPriceRaw).toFixed(2)) : null;
     const categoryId = document.getElementById("productCategorySelect").value || null;
     const subcategoryId = document.getElementById("productSubcategorySelect").value || null;
     const badge = document.getElementById("productBadgeInput").value.trim() || null;
@@ -1159,8 +1181,8 @@ function parseAndImportProducts(dataRows) {
             name_ar: rawNameAr,
             name_en: String(row[1] || "").trim() || null,
             description: String(row[2] || "").trim() || null,
-            price: price,
-            old_price: Number.isFinite(oldPrice) ? oldPrice : null,
+            price: parseFloat(price.toFixed(2)),
+            old_price: Number.isFinite(oldPrice) ? parseFloat(oldPrice.toFixed(2)) : null,
             category_id: categoryId || null,
             badge: String(row[6] || "").trim() || null,
             badge_type: String(row[7] || "").trim() || "official",
