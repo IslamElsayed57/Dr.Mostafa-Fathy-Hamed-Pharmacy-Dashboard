@@ -161,7 +161,11 @@
                             </button>
 
                             <input type="file" id="productExcelFile" accept=".xlsx,.xls" style="display: none;" onchange="handleProductExcelImport(this.files[0])">
+                            <input type="file" id="manifestCsvFileInput" accept=".csv" style="display: none;" onchange="handleManifestCsvUpload(this.files[0])">
 
+                            <button class="btn btn-outline btn-sm admin-only" style="display:none" onclick="document.getElementById('manifestCsvFileInput').click()" title="ربط الصور المرفوعة تلقائياً بالمنتجات من خلال ملف المانيفست">
+                                <i class="fa-solid fa-images" style="color: #2563EB;"></i> <span>ربط صور المنتجات</span>
+                            </button>
                             <button class="btn btn-outline btn-sm admin-only" style="display:none" onclick="document.getElementById('productExcelFile').click()" title="تحميل/رفع المنتجات من ملف إكسل">
                                 <i class="fa-solid fa-file-import"></i> <span data-i18n="importExcelTitle">رفع من Excel</span>
                             </button>
@@ -323,6 +327,47 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-primary" onclick="document.getElementById('productImportModal').classList.remove('active')" data-i18n="close">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manifest Image Sync Progress Modal -->
+    <div class="modal-backdrop" id="manifestSyncModal">
+        <div class="modal-card" style="max-width: 580px;">
+            <div class="modal-header">
+                <h4 class="card-title" id="manifestSyncModalTitle">ربط صور المنتجات من المانيفست</h4>
+                <button class="btn btn-icon btn-sm" id="manifestSyncModalCloseBtn" onclick="closeManifestSyncModal()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div id="manifestSyncStatusText" style="margin-bottom: 0.8rem; font-weight: 600; color: var(--text-main);">
+                    جاري فحص وتجهيز البيانات...
+                </div>
+
+                <!-- Progress Bar -->
+                <div style="background: #E5E7EB; border-radius: 9999px; height: 12px; width: 100%; overflow: hidden; margin-bottom: 1rem;">
+                    <div id="manifestSyncProgressBar" style="background: var(--primary, #0D9488); height: 100%; width: 0%; transition: width 0.2s ease;"></div>
+                </div>
+
+                <div id="manifestSyncStats" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; text-align: center; margin-bottom: 1rem;">
+                    <div style="background: #F3F4F6; padding: 0.6rem; border-radius: 8px;">
+                        <div style="font-size: 0.75rem; color: #6B7280;">تم التحديث</div>
+                        <div id="manifestSyncUpdatedCount" style="font-size: 1.1rem; font-weight: 700; color: #059669;">0</div>
+                    </div>
+                    <div style="background: #F3F4F6; padding: 0.6rem; border-radius: 8px;">
+                        <div style="font-size: 0.75rem; color: #6B7280;">تم تخطيهم (صور يدوية)</div>
+                        <div id="manifestSyncSkippedCount" style="font-size: 1.1rem; font-weight: 700; color: #2563EB;">0</div>
+                    </div>
+                    <div style="background: #F3F4F6; padding: 0.6rem; border-radius: 8px;">
+                        <div style="font-size: 0.75rem; color: #6B7280;">لم يتم العثور عليهم</div>
+                        <div id="manifestSyncUnmatchedCount" style="font-size: 1.1rem; font-weight: 700; color: #6B7280;">0</div>
+                    </div>
+                </div>
+
+                <div id="manifestSyncLog" style="max-height: 160px; overflow-y: auto; font-size: 0.8rem; line-height: 1.5; background: #F9FAFB; padding: 0.75rem; border-radius: 8px; border: 1px solid #E5E7EB; color: #4B5563;">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="manifestSyncDoneBtn" style="display:none" onclick="closeManifestSyncModal()">تم، إغلاق</button>
             </div>
         </div>
     </div>

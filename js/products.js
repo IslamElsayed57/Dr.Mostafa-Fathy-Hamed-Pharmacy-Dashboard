@@ -1261,3 +1261,229 @@ function showProductImportResults(inserted, errors, total) {
 
     modal.classList.add("active");
 }
+
+// ==========================================================================
+// Manifest CSV Image Sync Logic
+// ==========================================================================
+
+function closeManifestSyncModal() {
+    const modal = document.getElementById("manifestSyncModal");
+    if (modal) modal.classList.remove("active");
+    const fileInput = document.getElementById("manifestCsvFileInput");
+    if (fileInput) fileInput.value = "";
+}
+
+function normalizeProductKey(name) {
+    if (!name) return "";
+    return name
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "");
+}
+
+function parseCSVLine(line) {
+    const values = [];
+    let cur = "";
+    let inQuote = false;
+    for (let i = 0; i < line.length; i++) {
+        const c = line[i];
+        if (c === '"') {
+            if (inQuote && line[i + 1] === '"') {
+                cur += '"';
+                i++;
+            } else {
+                inQuote = !inQuote;
+            }
+        } else if (c === ',' && !inQuote) {
+            values.push(cur.trim());
+            cur = "";
+        } else {
+            cur += c;
+        }
+    }
+    values.push(cur.trim());
+    return values;
+}
+
+async function handleManifestCsvUpload(file) {
+    if (!file) return;
+
+    const modal = document.getElementById("manifestSyncModal");
+    const titleEl = document.getElementById("manifestSyncModalTitle");
+    const statusText = document.getElementById("manifestSyncStatusText");
+    const progressBar = document.getElementById("manifestSyncProgressBar");
+    const updatedCountEl = document.getElementById("manifestSyncUpdatedCount");
+    const skippedCountEl = document.getElementById("manifestSyncSkippedCount");
+    const unmatchedCountEl = document.getElementById("manifestSyncUnmatchedCount");
+    const logEl = document.getElementById("manifestSyncLog");
+    const doneBtn = document.getElementById("manifestSyncDoneBtn");
+    const closeBtn = document.getElementById("manifestSyncModalCloseBtn");
+
+    if (modal) modal.classList.add("active");
+    if (doneBtn) doneBtn.style.display = "none";
+    if (closeBtn) closeBtn.style.display = "none";
+    if (progressBar) progressBar.style.width = "0%";
+    if (updatedCountEl) updatedCountEl.textContent = "0";
+    if (skippedCountEl) skippedCountEl.textContent = "0";
+    if (unmatchedCountEl) unmatchedCountEl.textContent = "0";
+    if (logEl) logEl.innerHTML = `<div>📂 تم اختيار الملف: <b>${utils.escHtml(file.name)}</b></div>`;
+
+    try {
+        statusText.textContent = "جاري قراءة ملف المانيفست...";
+        const text = await file.text();
+        const rawLines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
+
+        if (rawLines.length <= 1) {
+            statusText.textContent = "الملف فارغ أو لا يحتوي على صفوف بيانات.";
+            if (doneBtn) doneBtn.style.display = "inline-block";
+            if (closeBtn) closeBtn.style.display = "inline-block";
+            return;
+        }
+
+        // Parse header
+        const header = parseCSVLine(rawLines[0]).map(h => h.toLowerCase());
+        const engIdx = header.indexOf("english_name");
+        const fileIdx = header.indexOf("file_name");
+        const statusIdx = header.indexOf("status");
+
+        if (engIdx === -1 || fileIdx === -1) {
+            statusText.textContent = "خطأ: الملف لا يحتوي على أعمدة english_name و file_name المطلوبة.";
+            if (doneBtn) doneBtn.style.display = "inline-block";
+            if (closeBtn) closeBtn.style.display = "inline-block";
+            return;
+        }
+
+        // Build image lookup map from manifest
+        const manifestMap = new Map();
+        for (let i = 1; i < rawLines.length; i++) {
+            const cols = parseCSVLine(rawLines[i]);
+            const engName = cols[engIdx] || "";
+            const fileName = cols[fileIdx] || "";
+            const st = (cols[statusIdx] || "ok").toLowerCase();
+
+            if (engName && fileName && st === "ok") {
+                const key = normalizeProductKey(engName);
+                if (key && !manifestMap.has(key)) {
+                    manifestMap.set(key, fileName);
+                }
+            }
+        }
+
+        logEl.innerHTML += `<div>✅ تم العثور على <b>${manifestMap.size}</b> صورة جاهزة في المانيفست.</div>`;
+        statusText.textContent = "جاري جلب قائمة المنتجات من قاعدة البيانات...";
+
+        // Fetch ALL products from database using pagination (Supabase default max rows is 1000 per request)
+        const client = db.getClient();
+        let dbProducts = [];
+        let fromIdx = 0;
+        const PAGE_STEP = 1000;
+        let hasMore = true;
+
+        while (hasMore) {
+            statusText.textContent = `جاري جلب المنتجات من قاعدة البيانات (${dbProducts.length})...`;
+            const { data: pageRows, error: dbError } = await client
+                .from("products")
+                .select("id, name_en, name_ar, image_url")
+                .range(fromIdx, fromIdx + PAGE_STEP - 1);
+
+            if (dbError) throw dbError;
+
+            if (pageRows && pageRows.length > 0) {
+                dbProducts.push(...pageRows);
+                fromIdx += PAGE_STEP;
+                if (pageRows.length < PAGE_STEP) {
+                    hasMore = false;
+                }
+            } else {
+                hasMore = false;
+            }
+        }
+
+        const totalProds = dbProducts.length;
+        logEl.innerHTML += `<div>📦 إجمالي المنتجات في قاعدة البيانات: <b>${totalProds}</b> منتج.</div>`;
+
+        // Bucket Public URL Prefix
+        const storageBase = `${CONFIG.SUPABASE_URL}/storage/v1/object/public/${CONFIG.STORAGE_BUCKETS.PRODUCT_IMAGES}/`;
+
+        let updated = 0;
+        let skippedManual = 0;
+        let unmatched = 0;
+
+        const updatesToApply = [];
+
+        for (const prod of (dbProducts || [])) {
+            // Check if product already has a manual image
+            if (prod.image_url && prod.image_url.trim() !== "") {
+                skippedManual++;
+                continue;
+            }
+
+            // Attempt to match by name_en
+            let matchedFileName = null;
+            if (prod.name_en) {
+                const key = normalizeProductKey(prod.name_en);
+                if (manifestMap.has(key)) {
+                    matchedFileName = manifestMap.get(key);
+                }
+            }
+
+            // Fallback match by name_ar if english was empty or didn't match
+            if (!matchedFileName && prod.name_ar) {
+                const keyAr = normalizeProductKey(prod.name_ar);
+                if (manifestMap.has(keyAr)) {
+                    matchedFileName = manifestMap.get(keyAr);
+                }
+            }
+
+            if (matchedFileName) {
+                const publicUrl = `${storageBase}${matchedFileName}`;
+                updatesToApply.push({ id: prod.id, image_url: publicUrl, name: prod.name_ar || prod.name_en });
+            } else {
+                unmatched++;
+            }
+        }
+
+        if (skippedCountEl) skippedCountEl.textContent = skippedManual;
+        if (unmatchedCountEl) unmatchedCountEl.textContent = unmatched;
+
+        logEl.innerHTML += `<div>🎯 تم مطابقة <b>${updatesToApply.length}</b> منتج جديد للربط. سيتم حفظ التعديلات...</div>`;
+        logEl.scrollTop = logEl.scrollHeight;
+
+        // Apply updates in batches to avoid overwhelming the network
+        const BATCH_SIZE = 25;
+        const totalToUpdate = updatesToApply.length;
+
+        for (let i = 0; i < totalToUpdate; i += BATCH_SIZE) {
+            const batch = updatesToApply.slice(i, i + BATCH_SIZE);
+            await Promise.all(
+                batch.map(item =>
+                    client
+                        .from("products")
+                        .update({ image_url: item.image_url })
+                        .eq("id", item.id)
+                )
+            );
+
+            updated += batch.length;
+            if (updatedCountEl) updatedCountEl.textContent = updated;
+
+            const pct = Math.min(100, Math.round((updated / (totalToUpdate || 1)) * 100));
+            if (progressBar) progressBar.style.width = `${pct}%`;
+            statusText.textContent = `جاري حفظ الروابط: ${updated} من ${totalToUpdate} (${pct}%)...`;
+        }
+
+        statusText.textContent = "🎉 اكتملت عملية ربط الصور بنجاح!";
+        if (progressBar) progressBar.style.width = "100%";
+        logEl.innerHTML += `<div style="color: #059669; font-weight: bold;">🎉 تم الانتهاء! تم تحديث ${updated} منتج، وتخطي ${skippedManual} منتج بحفظ صورهم اليدوية السابقة.</div>`;
+        logEl.scrollTop = logEl.scrollHeight;
+
+        await loadProducts();
+
+    } catch (err) {
+        console.error("Manifest sync error:", err);
+        statusText.textContent = `حدث خطأ أثناء المعالجة: ${err.message || err}`;
+        logEl.innerHTML += `<div style="color: #EF4444;">❌ خطأ: ${utils.escHtml(err.message || String(err))}</div>`;
+    } finally {
+        if (doneBtn) doneBtn.style.display = "inline-block";
+        if (closeBtn) closeBtn.style.display = "inline-block";
+    }
+}
