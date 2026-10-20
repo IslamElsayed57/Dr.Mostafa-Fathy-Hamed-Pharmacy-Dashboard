@@ -76,7 +76,14 @@ async function exportConsultationsByDateRange() {
         const headers = i18n.currentLang === "en"
             ? ["ID", "Consultant", "Phone", "Consultation type", "Contact method", "Status", "Branch", "Preferred time", "Details", "Outcome", "Outcome notes", "Followed up by", "Followed up at", "Created at", "Updated at"]
             : ["المعرف", "المستشير", "الهاتف", "نوع الاستشارة", "وسيلة التواصل", "الحالة", "الفرع", "الوقت المفضل", "التفاصيل", "النتيجة", "ملاحظات النتيجة", "تمت المتابعة بواسطة", "وقت المتابعة", "تاريخ الإنشاء", "آخر تحديث"];
-        const rows = consultations.map(consult => [consult.id, consult.patient_name || "", consult.phone || "", utils.translateConsultType(consult.consultation_type), consult.contact_method || "", consult.status || "", i18n.currentLang === "en" ? (consult.branches?.name_en || consult.branches?.name_ar || "") : (consult.branches?.name_ar || ""), consult.preferred_time || "", consult.details || "", consult.outcome || "", consult.outcome_notes || "", consult.followed_up_by || "", consult.followed_up_at || "", consult.created_at || "", consult.updated_at || ""]);
+        const rows = consultations.map(consult => {
+            const rawRow = [consult.id, consult.patient_name || "", consult.phone || "", utils.translateConsultType(consult.consultation_type), consult.contact_method || "", consult.status || "", i18n.currentLang === "en" ? (consult.branches?.name_en || consult.branches?.name_ar || "") : (consult.branches?.name_ar || ""), consult.preferred_time || "", consult.details || "", consult.outcome || "", consult.outcome_notes || "", consult.followed_up_by || "", consult.followed_up_at || "", consult.created_at || "", consult.updated_at || ""];
+            return rawRow.map(cell => {
+                if (typeof cell === "number" || typeof cell === "boolean") return cell;
+                const str = String(cell ?? "");
+                return str.length > 32000 ? str.slice(0, 31990) + "..." : str;
+            });
+        });
         const workbook = XLSX.utils.book_new();
         const sheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
         sheet["!cols"] = headers.map((_, index) => ({ wch: index >= 7 && index <= 10 ? 32 : 20 }));

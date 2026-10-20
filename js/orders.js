@@ -87,7 +87,39 @@ async function exportOrdersByDateRange() {
             : ["رقم الطلب", "معرف العميل", "كود التتبع", "العميل", "الهاتف", "نوع الطلب", "العنوان", "الأدوية", "ملاحظات", "مرجع الروشتة", "الأصناف", "المجموع الفرعي", "رسوم التوصيل", "الإجمالي", "الحالة", "سبب الإلغاء", "معرف الفرع", "تاريخ الإنشاء", "آخر تحديث"];
         const rows = orders.map(order => {
             const items = (order.order_items || []).map(item => `${item.product_name_snapshot} × ${item.quantity} (${item.unit_price} / ${item.total_price})`).join(" | ");
-            return [order.id, order.customer_id || "", order.tracking_code || "", order.customer_name || "", order.phone || "", order.order_type || order.delivery_method || "", order.address || "", order.medications || "", order.notes || "", order.prescription_path || order.prescription_url || "", items, Number(order.subtotal || 0), Number(order.delivery_fee || 0), Number(order.total || 0), order.status || "", order.cancellation_reason || "", order.branch_id || "", order.created_at || "", order.updated_at || ""];
+
+            let rxRef = order.prescription_path || order.prescription_url || "";
+            if (typeof rxRef === "string" && (rxRef.startsWith("data:") || rxRef.includes("data:image") || rxRef.includes("data:application/pdf"))) {
+                rxRef = i18n.currentLang === "en" ? "[Attached Prescription Image]" : "[مرفق صورة روشتة]";
+            }
+
+            const rawRow = [
+                order.id,
+                order.customer_id || "",
+                order.tracking_code || "",
+                order.customer_name || "",
+                order.phone || "",
+                order.order_type || order.delivery_method || "",
+                order.address || "",
+                order.medications || "",
+                order.notes || "",
+                rxRef,
+                items,
+                Number(order.subtotal || 0),
+                Number(order.delivery_fee || 0),
+                Number(order.total || 0),
+                order.status || "",
+                order.cancellation_reason || "",
+                order.branch_id || "",
+                order.created_at || "",
+                order.updated_at || ""
+            ];
+
+            return rawRow.map(cell => {
+                if (typeof cell === "number" || typeof cell === "boolean") return cell;
+                const str = String(cell ?? "");
+                return str.length > 32000 ? str.slice(0, 31990) + "..." : str;
+            });
         });
         const workbook = XLSX.utils.book_new();
         const sheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
