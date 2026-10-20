@@ -27,6 +27,11 @@ class SupabaseService {
     async getPrescriptionSignedUrl(filePath, expiresIn = 3600) {
         if (!filePath) return null;
 
+        // If stored as Base64 Data URL or direct external URL, return directly
+        if (filePath.startsWith("data:") || (filePath.startsWith("http") && !filePath.includes("/prescriptions/"))) {
+            return filePath;
+        }
+
         try {
             // Extract the filename if a full URL was stored
             let cleanPath = filePath;
