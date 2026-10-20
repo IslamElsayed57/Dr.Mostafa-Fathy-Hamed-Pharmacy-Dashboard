@@ -76,6 +76,16 @@ class NotificationManager {
 
         if (payload.eventType === "INSERT") {
             const order = payload.new;
+
+            // SECURITY FIX: Only ring / alert for orders that belong to this
+            // pharmacist's own branch. Admins (no branch restriction) see all.
+            const userBranchId = typeof auth !== "undefined" ? auth.getUserBranchId() : null;
+            if (userBranchId && order.branch_id && order.branch_id !== userBranchId) {
+                // Order is for a different branch — skip sound & badge increment
+                console.log(`Skipping alert: order branch (${order.branch_id}) ≠ user branch (${userBranchId})`);
+                return;
+            }
+
             this.unreadCount++;
             this.updateBadgeUI();
 
