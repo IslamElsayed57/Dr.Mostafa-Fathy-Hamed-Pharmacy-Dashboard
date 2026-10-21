@@ -1,0 +1,35 @@
+{
+    "name": "صيدلية د.مصطفى فتحي حامد - لوحة التحكم الصيدلانية",
+    "short_name": "Pharmacy Dashboard",
+    "description": "لوحة تحكم الصيدلية: إدارة الطلبات والمنتجات والمخزون والعملاء والاستشارات",
+    "id": "/Dr.Mostafa-Fathy-Hamed-Pharmacy-Dashboard/",
+    "start_url": "/Dr.Mostafa-Fathy-Hamed-Pharmacy-Dashboard/",
+    "scope": "/Dr.Mostafa-Fathy-Hamed-Pharmacy-Dashboard/",
+    "display": "standalone",
+    "orientation": "any",
+    "theme_color": "#5A3825",
+    "background_color": "#FFFFFF",
+    "lang": "ar",
+    "dir": "rtl",
+    "categories": ["business", "medical", "productivity"],
+    "icons": [
+        {
+            "src": "Icons/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "Icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "Icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}
